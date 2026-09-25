@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { useMess } from '../../context/MessContext';
-import { Plus, PiggyBank, Receipt, Calendar, CreditCard } from 'lucide-react';
+import { Plus, PiggyBank, Receipt, Calendar, CreditCard, Edit2, Trash2 } from 'lucide-react';
 import { AddDepositModal } from '../modals/AddDepositModal';
 import { UniversalSlipInvoiceModal, SlipInvoiceData } from '../modals/UniversalSlipInvoiceModal';
 
 export const ContributionListView: React.FC = () => {
-  const { state, membersMap } = useMess();
+  const { state, membersMap, deleteContribution } = useMess();
 
   const [isAddDepositOpen, setIsAddDepositOpen] = useState(false);
+  const [editingDeposit, setEditingDeposit] = useState<any | null>(null);
   const [selectedSlip, setSelectedSlip] = useState<SlipInvoiceData | null>(null);
 
   const totalContributions = state.contributions
@@ -104,28 +105,50 @@ export const ContributionListView: React.FC = () => {
                         +৳{contrib.amount.toLocaleString('en-IN')}
                       </td>
                       <td className="py-3 px-4 text-center whitespace-nowrap">
-                        <button
-                          onClick={() =>
-                            setSelectedSlip({
-                              type: 'DEPOSIT',
-                              id: contrib.id,
-                              title: `Deposit - ${member?.name || 'Member'}`,
-                              titleBn: 'মেস তহবিল জমা রসিদ',
-                              date: contrib.transactionDate,
-                              amount: contrib.amount,
-                              paymentMethod: contrib.paymentMethod,
-                              payerName: member?.name || 'Member',
-                              payerRole: member?.role || 'MEMBER',
-                              note: contrib.note,
-                              receiptUrl: contrib.receiptUrl,
-                              recordedBy: contrib.recordedBy || 'Admin'
-                            })
-                          }
-                          className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg font-semibold text-[11px] transition-colors inline-flex items-center gap-1.5 shadow-2xs"
-                        >
-                          <Receipt className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>Slip / Invoice</span>
-                        </button>
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() =>
+                              setSelectedSlip({
+                                type: 'DEPOSIT',
+                                id: contrib.id,
+                                title: `Deposit - ${member?.name || 'Member'}`,
+                                titleBn: 'মেস তহবিল জমা রসিদ',
+                                date: contrib.transactionDate,
+                                amount: contrib.amount,
+                                paymentMethod: contrib.paymentMethod,
+                                payerName: member?.name || 'Member',
+                                payerRole: member?.role || 'MEMBER',
+                                note: contrib.note,
+                                receiptUrl: contrib.receiptUrl,
+                                recordedBy: contrib.recordedBy || 'Admin'
+                              })
+                            }
+                            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg font-semibold text-[11px] transition-colors inline-flex items-center gap-1.5 shadow-2xs"
+                          >
+                            <Receipt className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Slip / Invoice</span>
+                          </button>
+                          
+                          <button
+                            onClick={() => setEditingDeposit(contrib)}
+                            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Edit Deposit"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          
+                          <button
+                            onClick={() => {
+                              if (window.confirm('Are you sure you want to delete this deposit?')) {
+                                deleteContribution(contrib.id);
+                              }
+                            }}
+                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete Deposit"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -147,6 +170,13 @@ export const ContributionListView: React.FC = () => {
       </div>
 
       <AddDepositModal isOpen={isAddDepositOpen} onClose={() => setIsAddDepositOpen(false)} />
+      {editingDeposit && (
+        <AddDepositModal
+          isOpen={true}
+          onClose={() => setEditingDeposit(null)}
+          initialData={editingDeposit}
+        />
+      )}
       <UniversalSlipInvoiceModal
         isOpen={!!selectedSlip}
         onClose={() => setSelectedSlip(null)}

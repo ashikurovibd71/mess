@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { useMess } from '../../context/MessContext';
-import { Plus, Receipt, Search, Filter, Calendar, Zap, Flame, Wifi, Home, Sparkles, Droplets } from 'lucide-react';
+import { Plus, Receipt, Search, Filter, Calendar, Zap, Flame, Wifi, Home, Sparkles, Droplets, Edit2, Trash2 } from 'lucide-react';
 import { AddExpenseModal } from '../modals/AddExpenseModal';
 import { UniversalSlipInvoiceModal, SlipInvoiceData } from '../modals/UniversalSlipInvoiceModal';
 import { ExpenseCategoryCode } from '../../types';
 
 export const ExpenseListView: React.FC = () => {
-  const { state, membersMap, categoriesMap } = useMess();
+  const { state, membersMap, categoriesMap, deleteExpense } = useMess();
 
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<any | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSlip, setSelectedSlip] = useState<SlipInvoiceData | null>(null);
@@ -148,29 +149,51 @@ export const ExpenseListView: React.FC = () => {
                       ৳{exp.amount.toLocaleString('en-IN')}
                     </td>
                     <td className="py-3 px-4 text-center whitespace-nowrap">
-                      <button
-                        onClick={() =>
-                          setSelectedSlip({
-                            type: 'EXPENSE',
-                            id: exp.id,
-                            title: exp.description,
-                            titleBn: 'মেস খরচ ও বিল ভাউচার',
-                            date: exp.expenseDate,
-                            amount: exp.amount,
-                            paymentMethod: exp.paymentMethod,
-                            payerName: paidByMember?.name || 'Mess Fund',
-                            payerRole: paidByMember?.role || 'MEMBER',
-                            category: exp.categoryCode,
-                            note: exp.note,
-                            receiptUrl: exp.receiptUrl,
-                            recordedBy: exp.recordedBy || 'Admin'
-                          })
-                        }
-                        className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg font-semibold text-[11px] transition-colors inline-flex items-center gap-1.5 shadow-2xs"
-                      >
-                        <Receipt className="w-3.5 h-3.5 text-amber-600" />
-                        <span>Voucher / Slip</span>
-                      </button>
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() =>
+                            setSelectedSlip({
+                              type: 'EXPENSE',
+                              id: exp.id,
+                              title: exp.description,
+                              titleBn: 'মেস খরচ ও বিল ভাউচার',
+                              date: exp.expenseDate,
+                              amount: exp.amount,
+                              paymentMethod: exp.paymentMethod,
+                              payerName: paidByMember?.name || 'Mess Fund',
+                              payerRole: paidByMember?.role || 'MEMBER',
+                              category: exp.categoryCode,
+                              note: exp.note,
+                              receiptUrl: exp.receiptUrl,
+                              recordedBy: exp.recordedBy || 'Admin'
+                            })
+                          }
+                          className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg font-semibold text-[11px] transition-colors inline-flex items-center gap-1.5 shadow-2xs"
+                        >
+                          <Receipt className="w-3.5 h-3.5 text-amber-600" />
+                          <span>Voucher / Slip</span>
+                        </button>
+
+                        <button
+                          onClick={() => setEditingExpense(exp)}
+                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Edit Expense"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        
+                        <button
+                          onClick={() => {
+                            if (window.confirm('Are you sure you want to delete this expense?')) {
+                              deleteExpense(exp.id);
+                            }
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete Expense"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -192,6 +215,13 @@ export const ExpenseListView: React.FC = () => {
       </div>
 
       <AddExpenseModal isOpen={isAddExpenseOpen} onClose={() => setIsAddExpenseOpen(false)} />
+      {editingExpense && (
+        <AddExpenseModal
+          isOpen={true}
+          onClose={() => setEditingExpense(null)}
+          initialData={editingExpense}
+        />
+      )}
       <UniversalSlipInvoiceModal
         isOpen={!!selectedSlip}
         onClose={() => setSelectedSlip(null)}

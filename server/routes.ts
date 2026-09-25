@@ -287,6 +287,31 @@ apiRouter.post('/contributions', async (req: Request, res: Response) => {
   }
 });
 
+apiRouter.put('/contributions/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { amount, paymentMethod, transactionDate, note, receiptUrl } = req.body;
+    await pool.query(`
+      UPDATE contributions 
+      SET amount = $1, payment_method = $2, transaction_date = $3, note = $4, receipt_url = $5
+      WHERE id = $6
+    `, [amount, paymentMethod, transactionDate, note, receiptUrl, id]);
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+apiRouter.delete('/contributions/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await pool.query('UPDATE contributions SET is_deleted = true WHERE id = $1', [id]);
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 6. POST /expenses (Add Mess Expense / Bill)
 apiRouter.post('/expenses', async (req: Request, res: Response) => {
   try {
@@ -339,6 +364,21 @@ apiRouter.post('/bazar', async (req: Request, res: Response) => {
     `, [expenseId, messId, totalAmount, `Bazar at ${marketName}`, date, purchasedBy, note, receiptUrl, bazarId, recordedBy || 'admin']);
 
     res.json({ success: true, bazarId, expenseId });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+apiRouter.delete('/bazar/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    // We also need to delete/mark the associated expense
+    const { rows } = await pool.query('SELECT expense_id FROM bazar_records WHERE id = $1', [id]);
+    if (rows.length > 0 && rows[0].expense_id) {
+       await pool.query('UPDATE expenses SET is_deleted = true WHERE id = $1', [rows[0].expense_id]);
+    }
+    await pool.query('DELETE FROM bazar_records WHERE id = $1', [id]); // cascaded to bazar_items ideally
+    res.json({ success: true });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -508,6 +548,32 @@ apiRouter.patch('/members/:id/role', async (req: Request, res: Response) => {
   }
 });
 
+apiRouter.put('/members/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { name, nameBn, email, phone, role, roomNumber } = req.body;
+    const { rows } = await pool.query(`
+      UPDATE users 
+      SET name = $1, name_bn = $2, email = $3, phone = $4, role = $5, room_number = $6, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $7
+      RETURNING id, name, name_bn as "nameBn", email, phone, role, status, room_number as "roomNumber", mess_id as "messId"
+    `, [name, nameBn || null, email, phone, role, roomNumber, id]);
+    res.json({ success: true, member: rows[0] });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+apiRouter.delete('/members/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM users WHERE id = $1', [id]);
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 13. Monthly Closing / Reopen
 apiRouter.post('/monthly-accounts/close', async (req: Request, res: Response) => {
   try {
@@ -537,6 +603,167 @@ apiRouter.post('/monthly-accounts/reopen', async (req: Request, res: Response) =
     `, [monthYear]);
 
     res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- GENERATED EDIT/DELETE ROUTES ---
+
+apiRouter.put('/expenses/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { categoryId, categoryCode, amount, description, expenseDate, paidBy, paymentMethod, note, receiptUrl, bazarId } = req.body;
+    await pool.query(`
+      UPDATE expenses 
+      SET category_id = $1, category_code = $2, amount = $3, description = $4, expense_date = $5, paid_by = $6, payment_method = $7, note = $8, receipt_url = $9, bazar_id = $10, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $11
+    `, [categoryId, categoryCode, amount, description, expenseDate, paidBy, paymentMethod, note, receiptUrl, bazarId, id]);
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+apiRouter.delete('/expenses/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await pool.query('UPDATE expenses SET is_deleted = true, updated_at = CURRENT_TIMESTAMP WHERE id = $1', [id]);
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+apiRouter.delete('/settlements/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM settlements WHERE id = $1', [id]);
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+apiRouter.delete('/duties/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM duty_schedules WHERE id = $1', [id]);
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+apiRouter.delete('/meals/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM meal_plans WHERE id = $1', [id]);
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+apiRouter.put('/bazar/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { purchasedBy, marketName, date, totalAmount, note, receiptUrl, items } = req.body;
+
+    await pool.query(
+      `UPDATE bazar_records SET purchased_by = $1, market_name = $2, date = $3, total_amount = $4, note = $5, receipt_url = $6, updated_at = NOW() WHERE id = $7`,
+      [purchasedBy, marketName, date, totalAmount, note, receiptUrl, id]
+    );
+
+    await pool.query('DELETE FROM bazar_items WHERE bazar_id = $1', [id]);
+    if (items && Array.isArray(items)) {
+      for (let i = 0; i < items.length; i++) {
+        const it = items[i];
+        await pool.query(
+          `INSERT INTO bazar_items (id, bazar_id, item_name, quantity, unit, unit_price, total_price) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [`bitem-${Date.now()}-${i}`, id, it.itemName, it.quantity, it.unit, it.unitPrice, it.totalPrice]
+        );
+      }
+    }
+
+    const { rows } = await pool.query('SELECT expense_id FROM bazar_records WHERE id = $1', [id]);
+    if (rows.length > 0 && rows[0].expense_id) {
+      await pool.query(
+        `UPDATE expenses SET amount = $1, description = $2, expense_date = $3, paid_by = $4, note = $5, receipt_url = $6, updated_at = NOW() WHERE id = $7`,
+        [totalAmount, `Bazar at ${marketName}`, date, purchasedBy, note, receiptUrl, rows[0].expense_id]
+      );
+    }
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+apiRouter.put('/settlements/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { fromMemberId, toMemberId, amount, paymentMethod, settlementDate, note } = req.body;
+    await pool.query(
+      `UPDATE settlements SET from_member_id = $1, to_member_id = $2, amount = $3, payment_method = $4, settlement_date = $5, note = $6 WHERE id = $7`,
+      [fromMemberId, toMemberId, amount, paymentMethod, settlementDate, note, id]
+    );
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+apiRouter.put('/duties/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { memberId, dutyType, date, mealType, note } = req.body;
+    await pool.query(
+      `UPDATE duty_schedules SET member_id = $1, duty_type = $2, date = $3, meal_type = $4, note = $5, updated_at = NOW() WHERE id = $6`,
+      [memberId, dutyType, date, mealType, note, id]
+    );
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+apiRouter.put('/shopping/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { itemName, quantity, unit, priority, estimatedCost, note } = req.body;
+    await pool.query(
+      `UPDATE shopping_items SET item_name = $1, quantity = $2, unit = $3, priority = $4, estimated_cost = $5, note = $6 WHERE id = $7`,
+      [itemName, quantity, unit, priority, estimatedCost, note, id]
+    );
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+apiRouter.patch('/notifications/:id/read', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await pool.query('UPDATE notifications SET is_read = true WHERE id = $1', [id]);
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+apiRouter.patch('/notifications/read-all', async (req: Request, res: Response) => {
+  try {
+    await pool.query('UPDATE notifications SET is_read = true');
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+apiRouter.get('/members', async (req: Request, res: Response) => {
+  try {
+    const { rows } = await pool.query('SELECT id, name, name_bn as "nameBn", email, phone, role, status, room_number as "roomNumber", join_date as "joinDate", mess_id as "messId" FROM users ORDER BY name ASC');
+    res.json({ members: rows });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

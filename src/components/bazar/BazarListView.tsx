@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { useMess } from '../../context/MessContext';
-import { ShoppingCart, Plus, ChevronDown, ChevronUp, Receipt, Calendar, MapPin, User as UserIcon, FileText } from 'lucide-react';
+import { ShoppingCart, Plus, ChevronDown, ChevronUp, Receipt, Calendar, MapPin, User as UserIcon, FileText, Edit2, Trash2 } from 'lucide-react';
 import { AddBazarModal } from '../modals/AddBazarModal';
 import { UniversalSlipInvoiceModal, SlipInvoiceData } from '../modals/UniversalSlipInvoiceModal';
 import { BazarRecord } from '../../types';
 
 export const BazarListView: React.FC = () => {
-  const { state, membersMap } = useMess();
+  const { state, membersMap, deleteBazarRecord } = useMess();
 
   const [isAddBazarOpen, setIsAddBazarOpen] = useState(false);
+  const [editingBazar, setEditingBazar] = useState<BazarRecord | null>(null);
   const [expandedBazarId, setExpandedBazarId] = useState<string | null>(state.bazarRecords[0]?.id || null);
   const [selectedSlip, setSelectedSlip] = useState<SlipInvoiceData | null>(null);
 
@@ -122,7 +123,7 @@ export const BazarListView: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1 sm:gap-2">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -131,10 +132,34 @@ export const BazarListView: React.FC = () => {
                     className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg font-semibold text-[11px] transition-colors inline-flex items-center gap-1.5 shadow-2xs"
                   >
                     <Receipt className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Memo / Slip</span>
+                    <span className="hidden sm:inline">Memo / Slip</span>
                   </button>
 
-                  <div className="text-right">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingBazar(record);
+                    }}
+                    className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    title="Edit Bazar"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (window.confirm('Are you sure you want to delete this bazar record?')) {
+                        deleteBazarRecord(record.id);
+                      }
+                    }}
+                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    title="Delete Bazar"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+
+                  <div className="text-right ml-2 sm:ml-4">
                     <div className="text-base sm:text-lg font-bold text-slate-900 tabular-nums">
                       ৳{record.totalAmount.toLocaleString('en-IN')}
                     </div>
@@ -215,6 +240,13 @@ export const BazarListView: React.FC = () => {
       </div>
 
       <AddBazarModal isOpen={isAddBazarOpen} onClose={() => setIsAddBazarOpen(false)} />
+      {editingBazar && (
+        <AddBazarModal
+          isOpen={true}
+          onClose={() => setEditingBazar(null)}
+          initialData={editingBazar}
+        />
+      )}
       <UniversalSlipInvoiceModal
         isOpen={!!selectedSlip}
         onClose={() => setSelectedSlip(null)}

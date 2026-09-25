@@ -6,19 +6,40 @@ import { X, DollarSign, Upload, AlertCircle } from 'lucide-react';
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  initialData?: {
+    id: string;
+    memberId: string;
+    amount: number;
+    paymentMethod: PaymentMethod;
+    transactionDate: string;
+    note?: string;
+    receiptUrl?: string;
+  };
 }
 
-export const AddDepositModal: React.FC<Props> = ({ isOpen, onClose }) => {
-  const { activeMembers, addContribution, isMonthClosed } = useMess();
+export const AddDepositModal: React.FC<Props> = ({ isOpen, onClose, initialData }) => {
+  const { activeMembers, addContribution, updateContribution, isMonthClosed } = useMess();
 
-  const [memberId, setMemberId] = useState(activeMembers[0]?.id || '');
-  const [amount, setAmount] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH');
+  const [memberId, setMemberId] = useState(initialData?.memberId || activeMembers[0]?.id || '');
+  const [amount, setAmount] = useState(initialData?.amount ? String(initialData.amount) : '');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(initialData?.paymentMethod || 'CASH');
   const [transactionDate, setTransactionDate] = useState(
-    new Date().toISOString().split('T')[0]
+    initialData?.transactionDate || new Date().toISOString().split('T')[0]
   );
-  const [note, setNote] = useState('');
-  const [receiptUrl, setReceiptUrl] = useState('');
+  const [note, setNote] = useState(initialData?.note || '');
+  const [receiptUrl, setReceiptUrl] = useState(initialData?.receiptUrl || '');
+
+  // Reset fields when opened/closed with different data
+  React.useEffect(() => {
+    if (isOpen) {
+      setMemberId(initialData?.memberId || activeMembers[0]?.id || '');
+      setAmount(initialData?.amount ? String(initialData.amount) : '');
+      setPaymentMethod(initialData?.paymentMethod || 'CASH');
+      setTransactionDate(initialData?.transactionDate || new Date().toISOString().split('T')[0]);
+      setNote(initialData?.note || '');
+      setReceiptUrl(initialData?.receiptUrl || '');
+    }
+  }, [isOpen, initialData, activeMembers]);
 
   if (!isOpen) return null;
 
@@ -30,14 +51,24 @@ export const AddDepositModal: React.FC<Props> = ({ isOpen, onClose }) => {
       return;
     }
 
-    addContribution({
-      memberId: memberId || activeMembers[0]?.id,
-      amount: parsedAmount,
-      paymentMethod,
-      transactionDate,
-      note: note.trim() || undefined,
-      receiptUrl: receiptUrl.trim() || undefined
-    });
+    if (initialData) {
+      updateContribution(initialData.id, {
+        amount: parsedAmount,
+        paymentMethod,
+        transactionDate,
+        note: note.trim() || undefined,
+        receiptUrl: receiptUrl.trim() || undefined
+      });
+    } else {
+      addContribution({
+        memberId: memberId || activeMembers[0]?.id,
+        amount: parsedAmount,
+        paymentMethod,
+        transactionDate,
+        note: note.trim() || undefined,
+        receiptUrl: receiptUrl.trim() || undefined
+      });
+    }
 
     onClose();
   };
@@ -47,7 +78,7 @@ export const AddDepositModal: React.FC<Props> = ({ isOpen, onClose }) => {
       <div className="bg-white rounded-xl shadow-xl w-full max-w-lg border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
           <div>
-            <h3 className="text-base font-semibold text-slate-900">Record Deposit</h3>
+            <h3 className="text-base font-semibold text-slate-900">{initialData ? 'Edit Deposit' : 'Record Deposit'}</h3>
             <p className="text-xs text-slate-500">Mess fund advance</p>
           </div>
           <button
@@ -73,8 +104,9 @@ export const AddDepositModal: React.FC<Props> = ({ isOpen, onClose }) => {
             <select
               value={memberId}
               onChange={(e) => setMemberId(e.target.value)}
-              className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800"
+              className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 disabled:opacity-70 disabled:bg-slate-50"
               required
+              disabled={!!initialData} // Usually you can't change the member of a deposit later easily
             >
               {activeMembers.map((m) => (
                 <option key={m.id} value={m.id}>
@@ -183,7 +215,7 @@ export const AddDepositModal: React.FC<Props> = ({ isOpen, onClose }) => {
               disabled={isMonthClosed}
               className="px-4 py-2 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors shadow-xs disabled:opacity-50"
             >
-              Confirm Deposit (জমা সম্পন্ন করুন)
+              {initialData ? 'Save Changes' : 'Confirm Deposit (জমা সম্পন্ন করুন)'}
             </button>
           </div>
         </form>

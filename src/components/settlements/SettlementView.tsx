@@ -10,16 +10,19 @@ import {
   ArrowRight,
   ShieldCheck,
   Plus,
-  Receipt
+  Receipt,
+  Edit2,
+  Trash2
 } from 'lucide-react';
 import { RecordSettlementModal } from '../modals/RecordSettlementModal';
 import { UniversalSlipInvoiceModal, SlipInvoiceData } from '../modals/UniversalSlipInvoiceModal';
 
 export const SettlementView: React.FC = () => {
-  const { financialOverview, state, membersMap, currentUser } = useMess();
+  const { financialOverview, state, membersMap, currentUser, deleteSettlement } = useMess();
 
   const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
   const [selectedSuggestion, setSelectedSuggestion] = useState<SettlementSuggestion | null>(null);
+  const [editingSettlement, setEditingSettlement] = useState<any | null>(null);
   const [selectedSlip, setSelectedSlip] = useState<SlipInvoiceData | null>(null);
 
   const handleSettleSuggestion = (s: SettlementSuggestion) => {
@@ -245,27 +248,49 @@ export const SettlementView: React.FC = () => {
                         ৳{s.amount.toLocaleString('en-IN')}
                       </td>
                       <td className="py-2.5 px-4 text-center whitespace-nowrap">
-                        <button
-                          onClick={() =>
-                            setSelectedSlip({
-                              type: 'SETTLEMENT',
-                              id: s.id,
-                              title: `Settlement: ${from?.name} → ${to?.name}`,
-                              titleBn: 'দেনা-পাওনা নিষ্পত্তি ভাউচার',
-                              date: s.settlementDate,
-                              amount: s.amount,
-                              paymentMethod: s.paymentMethod,
-                              payerName: from?.name,
-                              receiverName: to?.name,
-                              note: s.note,
-                              recordedBy: s.recordedBy || 'Admin'
-                            })
-                          }
-                          className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg font-semibold text-[11px] transition-colors inline-flex items-center gap-1.5 shadow-2xs"
-                        >
-                          <Receipt className="w-3.5 h-3.5 text-indigo-600" />
-                          <span>Slip</span>
-                        </button>
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() =>
+                              setSelectedSlip({
+                                type: 'SETTLEMENT',
+                                id: s.id,
+                                title: `Settlement: ${from?.name} → ${to?.name}`,
+                                titleBn: 'দেনা-পাওনা নিষ্পত্তি ভাউচার',
+                                date: s.settlementDate,
+                                amount: s.amount,
+                                paymentMethod: s.paymentMethod,
+                                payerName: from?.name,
+                                receiverName: to?.name,
+                                note: s.note,
+                                recordedBy: s.recordedBy || 'Admin'
+                              })
+                            }
+                            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg font-semibold text-[11px] transition-colors inline-flex items-center gap-1.5 shadow-2xs"
+                          >
+                            <Receipt className="w-3.5 h-3.5 text-indigo-600" />
+                            <span>Slip</span>
+                          </button>
+
+                          <button
+                            onClick={() => setEditingSettlement(s)}
+                            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Edit Settlement"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          
+                          <button
+                            onClick={() => {
+                              if (window.confirm('Are you sure you want to delete this settlement?')) {
+                                deleteSettlement(s.id);
+                              }
+                            }}
+                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete Settlement"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -288,6 +313,13 @@ export const SettlementView: React.FC = () => {
         }}
         presetSuggestion={selectedSuggestion}
       />
+      {editingSettlement && (
+        <RecordSettlementModal
+          isOpen={true}
+          onClose={() => setEditingSettlement(null)}
+          initialData={editingSettlement}
+        />
+      )}
       <UniversalSlipInvoiceModal
         isOpen={!!selectedSlip}
         onClose={() => setSelectedSlip(null)}

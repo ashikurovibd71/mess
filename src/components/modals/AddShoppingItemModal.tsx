@@ -6,17 +6,37 @@ import { X, ListPlus } from 'lucide-react';
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  initialData?: {
+    id: string;
+    itemName: string;
+    quantity: number;
+    unit: string;
+    priority: ShoppingPriority;
+    estimatedCost?: number;
+    note?: string;
+  };
 }
 
-export const AddShoppingItemModal: React.FC<Props> = ({ isOpen, onClose }) => {
-  const { addShoppingItem } = useMess();
+export const AddShoppingItemModal: React.FC<Props> = ({ isOpen, onClose, initialData }) => {
+  const { addShoppingItem, updateShoppingItem } = useMess();
 
-  const [itemName, setItemName] = useState('');
-  const [quantity, setQuantity] = useState('1');
-  const [unit, setUnit] = useState('kg');
-  const [priority, setPriority] = useState<ShoppingPriority>('HIGH');
-  const [estimatedCost, setEstimatedCost] = useState('');
-  const [note, setNote] = useState('');
+  const [itemName, setItemName] = useState(initialData?.itemName || '');
+  const [quantity, setQuantity] = useState(initialData?.quantity ? String(initialData.quantity) : '1');
+  const [unit, setUnit] = useState(initialData?.unit || 'kg');
+  const [priority, setPriority] = useState<ShoppingPriority>(initialData?.priority || 'HIGH');
+  const [estimatedCost, setEstimatedCost] = useState(initialData?.estimatedCost ? String(initialData.estimatedCost) : '');
+  const [note, setNote] = useState(initialData?.note || '');
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setItemName(initialData?.itemName || '');
+      setQuantity(initialData?.quantity ? String(initialData.quantity) : '1');
+      setUnit(initialData?.unit || 'kg');
+      setPriority(initialData?.priority || 'HIGH');
+      setEstimatedCost(initialData?.estimatedCost ? String(initialData.estimatedCost) : '');
+      setNote(initialData?.note || '');
+    }
+  }, [isOpen, initialData]);
 
   if (!isOpen) return null;
 
@@ -30,14 +50,25 @@ export const AddShoppingItemModal: React.FC<Props> = ({ isOpen, onClose }) => {
     const parsedQty = parseFloat(quantity) || 1;
     const parsedCost = estimatedCost ? parseFloat(estimatedCost) : undefined;
 
-    addShoppingItem({
-      itemName: itemName.trim(),
-      quantity: parsedQty,
-      unit,
-      priority,
-      estimatedCost: parsedCost,
-      note: note.trim() || undefined
-    });
+    if (initialData) {
+      updateShoppingItem(initialData.id, {
+        itemName: itemName.trim(),
+        quantity: parsedQty,
+        unit,
+        priority,
+        estimatedCost: parsedCost,
+        note: note.trim() || undefined
+      });
+    } else {
+      addShoppingItem({
+        itemName: itemName.trim(),
+        quantity: parsedQty,
+        unit,
+        priority,
+        estimatedCost: parsedCost,
+        note: note.trim() || undefined
+      });
+    }
 
     onClose();
   };
@@ -51,7 +82,7 @@ export const AddShoppingItemModal: React.FC<Props> = ({ isOpen, onClose }) => {
               <ListPlus className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-base font-semibold text-slate-900">Add Shopping Item</h3>
+              <h3 className="text-base font-semibold text-slate-900">{initialData ? 'Edit Shopping Item' : 'Add Shopping Item'}</h3>
               <p className="text-xs text-slate-500">Market grocery item</p>
             </div>
           </div>
@@ -170,7 +201,7 @@ export const AddShoppingItemModal: React.FC<Props> = ({ isOpen, onClose }) => {
               type="submit"
               className="px-5 py-2 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors shadow-xs"
             >
-              Add to List (তালিকায় যোগ করুন)
+              {initialData ? 'Save Changes' : 'Add to List (তালিকায় যোগ করুন)'}
             </button>
           </div>
         </form>

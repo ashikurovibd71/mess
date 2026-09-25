@@ -72,6 +72,23 @@ interface MessContextType {
     receiptUrl?: string;
   }) => Promise<void>;
 
+  updateContribution: (id: string, data: Partial<{
+    amount: number;
+    paymentMethod: PaymentMethod;
+    transactionDate: string;
+    note?: string;
+    receiptUrl?: string;
+  }>) => Promise<void>;
+  deleteContribution: (id: string) => Promise<void>;
+
+  updateExpense: (id: string, data: any) => Promise<void>;
+  deleteExpense: (id: string) => Promise<void>;
+  updateBazarRecord: (id: string, data: any) => Promise<void>;
+  deleteBazarRecord: (id: string) => Promise<void>;
+  updateSettlement: (id: string, data: any) => Promise<void>;
+  deleteSettlement: (id: string) => Promise<void>;
+  updateDuty: (id: string, data: any) => Promise<void>;
+  deleteDuty: (id: string) => Promise<void>;
   addExpense: (data: {
     categoryId: string;
     categoryCode: ExpenseCategoryCode;
@@ -118,6 +135,7 @@ interface MessContextType {
   addManualDuty: (data: { memberId: string; dutyType: DutyType; date: string; mealType?: MealType; customDutyName?: string; note?: string }) => Promise<void>;
 
   addShoppingItem: (data: { itemName: string; quantity: number; unit: string; priority: ShoppingPriority; estimatedCost?: number; note?: string }) => Promise<void>;
+  updateShoppingItem: (id: string, data: Partial<{ itemName: string; quantity: number; unit: string; priority: ShoppingPriority; estimatedCost?: number; note?: string }>) => Promise<void>;
   toggleShoppingItem: (id: string) => Promise<void>;
   deleteShoppingItem: (id: string) => Promise<void>;
 
@@ -127,6 +145,8 @@ interface MessContextType {
   reopenMonth: () => Promise<void>;
 
   addMember: (data: { name: string; nameBn?: string; email: string; phone: string; role: Role; roomNumber?: string }) => Promise<void>;
+  updateMember: (id: string, data: { name: string; nameBn?: string; email: string; phone: string; roomNumber?: string }) => Promise<void>;
+  deleteMember: (id: string) => Promise<void>;
   toggleMemberStatus: (memberId: string) => Promise<void>;
   updateMemberRole: (memberId: string, role: Role) => Promise<void>;
 
@@ -429,6 +449,132 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (err) {
       console.warn('API sync warning:', err);
     }
+  };
+
+  const updateContribution = async (id: string, data: Partial<{
+    amount: number;
+    paymentMethod: PaymentMethod;
+    transactionDate: string;
+    note?: string;
+    receiptUrl?: string;
+  }>) => {
+    if (isMonthClosed) {
+      alert('This month is closed. Please ask Admin to reopen before making changes.');
+      return;
+    }
+
+    setState((prev) => {
+      const contributionIndex = prev.contributions.findIndex(c => c.id === id);
+      if (contributionIndex === -1) return prev;
+      
+      const newContributions = [...prev.contributions];
+      newContributions[contributionIndex] = {
+        ...newContributions[contributionIndex],
+        ...data,
+      };
+
+      return {
+        ...prev,
+        contributions: newContributions
+      };
+    });
+
+    try {
+      await apiRequest(`/api/contributions/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+      });
+    } catch (err) {
+      console.warn('API sync warning:', err);
+    }
+  };
+
+  const deleteContribution = async (id: string) => {
+    setState((prev) => ({
+      ...prev,
+      contributions: prev.contributions.filter(c => c.id !== id)
+    }));
+    try {
+      await apiRequest(`/api/contributions/${id}`, { method: 'DELETE' });
+    } catch (err) {
+      console.warn('API sync warning:', err);
+    }
+  };
+
+  const updateExpense = async (id: string, data: any) => {
+    setState((prev) => ({
+      ...prev,
+      expenses: prev.expenses.map(e => e.id === id ? { ...e, ...data } : e)
+    }));
+    try {
+      await apiRequest(`/api/expenses/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    } catch (err) { console.warn(err); }
+  };
+  const deleteExpense = async (id: string) => {
+    setState((prev) => ({
+      ...prev,
+      expenses: prev.expenses.filter(e => e.id !== id)
+    }));
+    try {
+      await apiRequest(`/api/expenses/${id}`, { method: 'DELETE' });
+    } catch (err) { console.warn(err); }
+  };
+
+  const updateBazarRecord = async (id: string, data: any) => {
+    setState((prev) => ({
+      ...prev,
+      bazarRecords: prev.bazarRecords.map(b => b.id === id ? { ...b, ...data } : b)
+    }));
+    try {
+      await apiRequest(`/api/bazar/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    } catch (err) { console.warn(err); }
+  };
+  const deleteBazarRecord = async (id: string) => {
+    setState((prev) => ({
+      ...prev,
+      bazarRecords: prev.bazarRecords.filter(b => b.id !== id)
+    }));
+    try {
+      await apiRequest(`/api/bazar/${id}`, { method: 'DELETE' });
+    } catch (err) { console.warn(err); }
+  };
+
+  const updateSettlement = async (id: string, data: any) => {
+    setState((prev) => ({
+      ...prev,
+      settlements: prev.settlements.map(s => s.id === id ? { ...s, ...data } : s)
+    }));
+    try {
+      await apiRequest(`/api/settlements/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    } catch (err) { console.warn(err); }
+  };
+  const deleteSettlement = async (id: string) => {
+    setState((prev) => ({
+      ...prev,
+      settlements: prev.settlements.filter(s => s.id !== id)
+    }));
+    try {
+      await apiRequest(`/api/settlements/${id}`, { method: 'DELETE' });
+    } catch (err) { console.warn(err); }
+  };
+
+  const updateDuty = async (id: string, data: any) => {
+    setState((prev) => ({
+      ...prev,
+      dutySchedules: prev.dutySchedules.map(d => d.id === id ? { ...d, ...data } : d)
+    }));
+    try {
+      await apiRequest(`/api/duties/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    } catch (err) { console.warn(err); }
+  };
+  const deleteDuty = async (id: string) => {
+    setState((prev) => ({
+      ...prev,
+      dutySchedules: prev.dutySchedules.filter(d => d.id !== id)
+    }));
+    try {
+      await apiRequest(`/api/duties/${id}`, { method: 'DELETE' });
+    } catch (err) { console.warn(err); }
   };
 
   // 2. Add Expense
@@ -939,6 +1085,40 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const updateShoppingItem = async (id: string, data: Partial<{
+    itemName: string;
+    quantity: number;
+    unit: string;
+    priority: ShoppingPriority;
+    estimatedCost?: number;
+    note?: string;
+  }>) => {
+    setState((prev) => {
+      const idx = prev.shoppingList.findIndex(item => item.id === id);
+      if (idx === -1) return prev;
+
+      const newShoppingList = [...prev.shoppingList];
+      newShoppingList[idx] = {
+        ...newShoppingList[idx],
+        ...data
+      };
+
+      return {
+        ...prev,
+        shoppingList: newShoppingList
+      };
+    });
+
+    try {
+      await apiRequest(`/api/shopping/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data)
+      });
+    } catch (err) {
+      console.warn('API sync warning:', err);
+    }
+  };
+
   const toggleShoppingItem = async (id: string) => {
     setState((prev) => ({
       ...prev,
@@ -1127,6 +1307,39 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const updateMember = async (id: string, data: { name: string; nameBn?: string; email: string; phone: string; roomNumber?: string }) => {
+    setState((prev) => ({
+      ...prev,
+      members: prev.members.map((m) =>
+        m.id === id ? { ...m, ...data, updatedAt: new Date().toISOString() } : m
+      )
+    }));
+
+    try {
+      await apiRequest(`/api/members/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+      });
+    } catch (err) {
+      console.warn('API sync warning:', err);
+    }
+  };
+
+  const deleteMember = async (id: string) => {
+    setState((prev) => ({
+      ...prev,
+      members: prev.members.filter((m) => m.id !== id)
+    }));
+
+    try {
+      await apiRequest(`/api/members/${id}`, {
+        method: 'DELETE'
+      });
+    } catch (err) {
+      console.warn('API sync warning:', err);
+    }
+  };
+
   const toggleMemberStatus = async (memberId: string) => {
     setState((prev) => ({
       ...prev,
@@ -1164,18 +1377,30 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const markNotificationRead = (id: string) => {
+  const markNotificationRead = async (id: string) => {
     setState((prev) => ({
       ...prev,
       notifications: prev.notifications.map((n) => (n.id === id ? { ...n, isRead: true } : n))
     }));
+
+    try {
+      await apiRequest(`/api/notifications/${id}/read`, { method: 'PATCH' });
+    } catch (err) {
+      console.warn('API sync warning:', err);
+    }
   };
 
-  const markAllNotificationsRead = () => {
+  const markAllNotificationsRead = async () => {
     setState((prev) => ({
       ...prev,
       notifications: prev.notifications.map((n) => ({ ...n, isRead: true }))
     }));
+
+    try {
+      await apiRequest('/api/notifications/read-all', { method: 'PATCH' });
+    } catch (err) {
+      console.warn('API sync warning:', err);
+    }
   };
 
   const resetDemoData = () => {
@@ -1271,22 +1496,35 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         activeMembers,
         isMonthClosed,
         addContribution,
+        updateContribution,
+        deleteContribution,
         addExpense,
+        updateExpense,
+        deleteExpense,
         addBazarRecord,
+        updateBazarRecord,
+        deleteBazarRecord,
         convertShoppingToBazar,
         recordSettlement,
+        updateSettlement,
+        deleteSettlement,
         toggleDutyStatus,
         requestDutySwap,
         respondDutySwap,
         createAutoDutyRotation,
         addManualDuty,
+        updateDuty,
+        deleteDuty,
         addShoppingItem,
+        updateShoppingItem,
         toggleShoppingItem,
         deleteShoppingItem,
         saveMealPlan,
         closeMonth,
         reopenMonth,
         addMember,
+        updateMember,
+        deleteMember,
         toggleMemberStatus,
         updateMemberRole,
         markNotificationRead,

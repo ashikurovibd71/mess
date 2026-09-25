@@ -7,23 +7,47 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   presetCategory?: ExpenseCategoryCode;
+  initialData?: {
+    id: string;
+    categoryId: string;
+    amount: number;
+    description: string;
+    expenseDate: string;
+    paidBy: string;
+    paymentMethod: PaymentMethod;
+    note?: string;
+    receiptUrl?: string;
+  };
 }
 
-export const AddExpenseModal: React.FC<Props> = ({ isOpen, onClose, presetCategory }) => {
-  const { state, activeMembers, addExpense, isMonthClosed, currentUser } = useMess();
+export const AddExpenseModal: React.FC<Props> = ({ isOpen, onClose, presetCategory, initialData }) => {
+  const { state, activeMembers, addExpense, updateExpense, isMonthClosed, currentUser } = useMess();
 
   const defaultCat = state.categories.find(
     (c) => c.code === (presetCategory || 'ELECTRICITY')
   ) || state.categories[0];
 
-  const [categoryId, setCategoryId] = useState(defaultCat.id);
-  const [amount, setAmount] = useState('');
-  const [description, setDescription] = useState('');
-  const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split('T')[0]);
-  const [paidBy, setPaidBy] = useState(currentUser.id);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('BKASH');
-  const [note, setNote] = useState('');
-  const [receiptUrl, setReceiptUrl] = useState('');
+  const [categoryId, setCategoryId] = useState(initialData?.categoryId || defaultCat.id);
+  const [amount, setAmount] = useState(initialData?.amount ? String(initialData.amount) : '');
+  const [description, setDescription] = useState(initialData?.description || '');
+  const [expenseDate, setExpenseDate] = useState(initialData?.expenseDate || new Date().toISOString().split('T')[0]);
+  const [paidBy, setPaidBy] = useState(initialData?.paidBy || currentUser.id);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(initialData?.paymentMethod || 'BKASH');
+  const [note, setNote] = useState(initialData?.note || '');
+  const [receiptUrl, setReceiptUrl] = useState(initialData?.receiptUrl || '');
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setCategoryId(initialData?.categoryId || defaultCat.id);
+      setAmount(initialData?.amount ? String(initialData.amount) : '');
+      setDescription(initialData?.description || '');
+      setExpenseDate(initialData?.expenseDate || new Date().toISOString().split('T')[0]);
+      setPaidBy(initialData?.paidBy || currentUser.id);
+      setPaymentMethod(initialData?.paymentMethod || 'BKASH');
+      setNote(initialData?.note || '');
+      setReceiptUrl(initialData?.receiptUrl || '');
+    }
+  }, [isOpen, initialData, defaultCat.id, currentUser.id]);
 
   if (!isOpen) return null;
 
@@ -42,17 +66,31 @@ export const AddExpenseModal: React.FC<Props> = ({ isOpen, onClose, presetCatego
       return;
     }
 
-    addExpense({
-      categoryId: selectedCategory.id,
-      categoryCode: selectedCategory.code,
-      amount: parsedAmount,
-      description: description.trim(),
-      expenseDate,
-      paidBy,
-      paymentMethod,
-      note: note.trim() || undefined,
-      receiptUrl: receiptUrl.trim() || undefined
-    });
+    if (initialData) {
+      updateExpense(initialData.id, {
+        categoryId: selectedCategory.id,
+        categoryCode: selectedCategory.code,
+        amount: parsedAmount,
+        description: description.trim(),
+        expenseDate,
+        paidBy,
+        paymentMethod,
+        note: note.trim() || undefined,
+        receiptUrl: receiptUrl.trim() || undefined
+      });
+    } else {
+      addExpense({
+        categoryId: selectedCategory.id,
+        categoryCode: selectedCategory.code,
+        amount: parsedAmount,
+        description: description.trim(),
+        expenseDate,
+        paidBy,
+        paymentMethod,
+        note: note.trim() || undefined,
+        receiptUrl: receiptUrl.trim() || undefined
+      });
+    }
 
     onClose();
   };
@@ -66,7 +104,7 @@ export const AddExpenseModal: React.FC<Props> = ({ isOpen, onClose, presetCatego
               <Receipt className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-base font-semibold text-slate-900">Add Expense / Bill</h3>
+              <h3 className="text-base font-semibold text-slate-900">{initialData ? 'Edit Expense' : 'Add Expense / Bill'}</h3>
               <p className="text-xs text-slate-500">Mess utility or operational expense</p>
             </div>
           </div>
@@ -236,7 +274,7 @@ export const AddExpenseModal: React.FC<Props> = ({ isOpen, onClose, presetCatego
               disabled={isMonthClosed}
               className="px-5 py-2 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors shadow-xs disabled:opacity-50"
             >
-              Record Expense (খরচ যোগ করুন)
+              {initialData ? 'Save Changes' : 'Record Expense (খরচ যোগ করুন)'}
             </button>
           </div>
         </form>

@@ -14,3 +14,32 @@
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
+
+@media print {
+  @page {
+    margin: 0.5cm;
+    size: A4 portrait;
+  }
+  body {
+    height: 100%;
+    overflow: hidden !important;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .print-wrapper, .print-wrapper * {
+    visibility: visible;
+  }
+  .print-wrapper {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden !important;
+    page-break-after: avoid;
+    break-inside: avoid;
+  }
+}

@@ -7,29 +7,50 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   presetSuggestion?: SettlementSuggestion | null;
+  initialData?: {
+    id: string;
+    fromMemberId: string;
+    toMemberId: string;
+    amount: number;
+    paymentMethod: PaymentMethod;
+    settlementDate: string;
+    note?: string;
+  };
 }
 
 export const RecordSettlementModal: React.FC<Props> = ({
   isOpen,
   onClose,
-  presetSuggestion
+  presetSuggestion,
+  initialData
 }) => {
-  const { activeMembers, recordSettlement, isMonthClosed } = useMess();
+  const { activeMembers, recordSettlement, updateSettlement, isMonthClosed } = useMess();
 
   const [fromMemberId, setFromMemberId] = useState(
-    presetSuggestion?.fromMemberId || activeMembers[1]?.id || ''
+    initialData?.fromMemberId || presetSuggestion?.fromMemberId || activeMembers[1]?.id || ''
   );
   const [toMemberId, setToMemberId] = useState(
-    presetSuggestion?.toMemberId || activeMembers[0]?.id || ''
+    initialData?.toMemberId || presetSuggestion?.toMemberId || activeMembers[0]?.id || ''
   );
   const [amount, setAmount] = useState(
-    presetSuggestion ? String(presetSuggestion.amount) : ''
+    initialData?.amount ? String(initialData.amount) : presetSuggestion ? String(presetSuggestion.amount) : ''
   );
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('BKASH');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(initialData?.paymentMethod || 'BKASH');
   const [settlementDate, setSettlementDate] = useState(
-    new Date().toISOString().split('T')[0]
+    initialData?.settlementDate || new Date().toISOString().split('T')[0]
   );
-  const [note, setNote] = useState('');
+  const [note, setNote] = useState(initialData?.note || '');
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setFromMemberId(initialData?.fromMemberId || presetSuggestion?.fromMemberId || activeMembers[1]?.id || '');
+      setToMemberId(initialData?.toMemberId || presetSuggestion?.toMemberId || activeMembers[0]?.id || '');
+      setAmount(initialData?.amount ? String(initialData.amount) : presetSuggestion ? String(presetSuggestion.amount) : '');
+      setPaymentMethod(initialData?.paymentMethod || 'BKASH');
+      setSettlementDate(initialData?.settlementDate || new Date().toISOString().split('T')[0]);
+      setNote(initialData?.note || '');
+    }
+  }, [isOpen, initialData, presetSuggestion, activeMembers]);
 
   if (!isOpen) return null;
 
@@ -46,14 +67,25 @@ export const RecordSettlementModal: React.FC<Props> = ({
       return;
     }
 
-    recordSettlement({
-      fromMemberId,
-      toMemberId,
-      amount: parsedAmount,
-      paymentMethod,
-      settlementDate,
-      note: note.trim() || undefined
-    });
+    if (initialData) {
+      updateSettlement(initialData.id, {
+        fromMemberId,
+        toMemberId,
+        amount: parsedAmount,
+        paymentMethod,
+        settlementDate,
+        note: note.trim() || undefined
+      });
+    } else {
+      recordSettlement({
+        fromMemberId,
+        toMemberId,
+        amount: parsedAmount,
+        paymentMethod,
+        settlementDate,
+        note: note.trim() || undefined
+      });
+    }
 
     onClose();
   };
@@ -67,7 +99,7 @@ export const RecordSettlementModal: React.FC<Props> = ({
               <ArrowRightLeft className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-base font-semibold text-slate-900">Record Settlement Payment</h3>
+              <h3 className="text-base font-semibold text-slate-900">{initialData ? 'Edit Settlement Payment' : 'Record Settlement Payment'}</h3>
               <p className="text-xs text-slate-500">Direct member-to-member payment</p>
             </div>
           </div>
@@ -194,7 +226,7 @@ export const RecordSettlementModal: React.FC<Props> = ({
               disabled={isMonthClosed}
               className="px-5 py-2 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors shadow-xs disabled:opacity-50"
             >
-              Confirm Settlement (নিষ্পত্তি সম্পন্ন করুন)
+              {initialData ? 'Save Changes' : 'Confirm Settlement (নিষ্পত্তি সম্পন্ন করুন)'}
             </button>
           </div>
         </form>

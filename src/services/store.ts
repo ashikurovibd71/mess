@@ -100,29 +100,6 @@ const DEFAULT_MONTHLY_ACCOUNTS: MonthlyAccount[] = [
 ];
 
 export function getInitialState(): AppState {
-  if (typeof window !== 'undefined') {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed: AppState = JSON.parse(stored);
-        // Filter out any obsolete dummy members/cashiers
-        if (Array.isArray(parsed.members)) {
-          parsed.members = parsed.members.filter(
-            (m) => !REMOVED_DEFAULT_USER_IDS.has(m.id) && !REMOVED_DEFAULT_EMAILS.has(m.email?.toLowerCase())
-          );
-        }
-        if (!parsed.members || parsed.members.length === 0) {
-          parsed.members = [OVI_ADMIN_USER];
-        }
-        if (REMOVED_DEFAULT_USER_IDS.has(parsed.currentUserId)) {
-          parsed.currentUserId = OVI_ADMIN_USER.id;
-        }
-        return parsed;
-      }
-    } catch (e) {
-      console.error('Failed to load mess data from storage:', e);
-    }
-  }
 
   // Pure clean dynamic state - ONLY Ovi (ADMIN) as default user
   return {
@@ -147,11 +124,5 @@ export function getInitialState(): AppState {
 }
 
 export function saveState(state: AppState): void {
-  if (typeof window !== 'undefined') {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch (e) {
-      console.error('Failed to persist mess data:', e);
-    }
-  }
+  // Persistence is now fully handled by the backend API.
 }

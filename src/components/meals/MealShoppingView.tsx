@@ -9,7 +9,8 @@ import {
   Clock,
   Sparkles,
   ArrowRight,
-  Plus
+  Plus,
+  Edit2
 } from 'lucide-react';
 import { AddShoppingItemModal } from '../modals/AddShoppingItemModal';
 import { AddBazarModal } from '../modals/AddBazarModal';
@@ -27,6 +28,7 @@ export const MealShoppingView: React.FC = () => {
 
   const [isAddShoppingOpen, setIsAddShoppingOpen] = useState(false);
   const [isBazarModalOpen, setIsBazarModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<any>(null);
 
   // Meal Plan Editing state
   const selectedDate = '2026-09-25';
@@ -92,7 +94,10 @@ export const MealShoppingView: React.FC = () => {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setIsAddShoppingOpen(true)}
+            onClick={() => {
+              setEditingItem(null);
+              setIsAddShoppingOpen(true);
+            }}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors shadow-xs"
           >
             <ListPlus className="w-3.5 h-3.5" />
@@ -263,6 +268,16 @@ export const MealShoppingView: React.FC = () => {
                         </span>
                       )}
                       <button
+                        onClick={() => {
+                          setEditingItem(item);
+                          setIsAddShoppingOpen(true);
+                        }}
+                        className="text-slate-400 hover:text-blue-600 p-1 rounded transition-colors"
+                        title="Edit item"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
                         onClick={() => deleteShoppingItem(item.id)}
                         className="text-slate-400 hover:text-rose-600 p-1 rounded transition-colors"
                         title="Delete item"
@@ -286,7 +301,11 @@ export const MealShoppingView: React.FC = () => {
 
       <AddShoppingItemModal
         isOpen={isAddShoppingOpen}
-        onClose={() => setIsAddShoppingOpen(false)}
+        onClose={() => {
+          setIsAddShoppingOpen(false);
+          setEditingItem(null);
+        }}
+        initialData={editingItem}
       />
     </div>
   );

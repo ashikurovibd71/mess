@@ -4,12 +4,15 @@ import { Role } from '../../types';
 import { Users, Plus, Shield, Phone, Mail, Home, CheckCircle2, XCircle, Receipt } from 'lucide-react';
 import { AddMemberModal } from '../modals/AddMemberModal';
 import { UniversalSlipInvoiceModal, SlipInvoiceData } from '../modals/UniversalSlipInvoiceModal';
+import { EditMemberModal } from '../modals/EditMemberModal';
+import { User } from '../../types';
 
 export const MemberManagementView: React.FC = () => {
-  const { state, currentRole, toggleMemberStatus, updateMemberRole, financialOverview } = useMess();
+  const { state, currentRole, toggleMemberStatus, updateMemberRole, financialOverview, deleteMember } = useMess();
 
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
   const [selectedSlip, setSelectedSlip] = useState<SlipInvoiceData | null>(null);
+  const [editingMember, setEditingMember] = useState<User | null>(null);
 
   return (
     <div className="space-y-6">
@@ -159,16 +162,34 @@ export const MemberManagementView: React.FC = () => {
                     </select>
                   </div>
 
-                  <button
-                    onClick={() => toggleMemberStatus(member.id)}
-                    className={`text-[11px] font-semibold px-2.5 py-1 rounded transition-colors ${
-                      isActive
-                        ? 'text-rose-700 hover:bg-rose-50'
-                        : 'text-emerald-700 hover:bg-emerald-50'
-                    }`}
-                  >
-                    {isActive ? 'Deactivate' : 'Reactivate'}
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setEditingMember(member)}
+                      className="text-[11px] font-semibold px-2 py-1 rounded transition-colors text-blue-700 hover:bg-blue-50"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => toggleMemberStatus(member.id)}
+                      className={`text-[11px] font-semibold px-2 py-1 rounded transition-colors ${
+                        isActive
+                          ? 'text-rose-700 hover:bg-rose-50'
+                          : 'text-emerald-700 hover:bg-emerald-50'
+                      }`}
+                    >
+                      {isActive ? 'Deactivate' : 'Reactivate'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm(`Are you sure you want to permanently delete ${member.name}?`)) {
+                          deleteMember(member.id);
+                        }
+                      }}
+                      className="text-[11px] font-semibold px-2 py-1 rounded transition-colors text-red-700 hover:bg-red-50"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -177,6 +198,13 @@ export const MemberManagementView: React.FC = () => {
       </div>
 
       <AddMemberModal isOpen={isAddMemberOpen} onClose={() => setIsAddMemberOpen(false)} />
+      {editingMember && (
+        <EditMemberModal
+          isOpen={true}
+          onClose={() => setEditingMember(null)}
+          member={editingMember}
+        />
+      )}
       <UniversalSlipInvoiceModal
         isOpen={!!selectedSlip}
         onClose={() => setSelectedSlip(null)}

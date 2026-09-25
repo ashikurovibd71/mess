@@ -12,7 +12,9 @@ import {
   AlertCircle,
   Filter,
   Check,
-  X
+  X,
+  Edit2,
+  Trash2
 } from 'lucide-react';
 import { GenerateDutyModal } from '../modals/GenerateDutyModal';
 import { RequestDutySwapModal } from '../modals/RequestDutySwapModal';
@@ -26,7 +28,9 @@ export const DutyManagementView: React.FC = () => {
     dutyStats,
     toggleDutyStatus,
     respondDutySwap,
-    addManualDuty
+    addManualDuty,
+    updateDuty,
+    deleteDuty
   } = useMess();
 
   const [isGenerateOpen, setIsGenerateOpen] = useState(false);
@@ -35,8 +39,8 @@ export const DutyManagementView: React.FC = () => {
   const [filterDutyType, setFilterDutyType] = useState<string>('ALL');
   const [filterMemberId, setFilterMemberId] = useState<string>('ALL');
 
-  // Manual duty assignment form toggle
   const [showManualForm, setShowManualForm] = useState(false);
+  const [editingDutyId, setEditingDutyId] = useState<string | null>(null);
   const [manualMemberId, setManualMemberId] = useState(state.members[0]?.id || '');
   const [manualDutyType, setManualDutyType] = useState<DutyType>('BAZAR');
   const [manualMealType, setManualMealType] = useState<'BREAKFAST' | 'LUNCH' | 'DINNER'>('LUNCH');
@@ -47,14 +51,25 @@ export const DutyManagementView: React.FC = () => {
 
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    addManualDuty({
-      memberId: manualMemberId,
-      dutyType: manualDutyType,
-      date: manualDate,
-      mealType: manualDutyType === 'COOKING' ? manualMealType : undefined,
-      note: manualNote.trim() || undefined
-    });
+    if (editingDutyId) {
+      updateDuty(editingDutyId, {
+        memberId: manualMemberId,
+        dutyType: manualDutyType,
+        date: manualDate,
+        mealType: manualDutyType === 'COOKING' ? manualMealType : undefined,
+        note: manualNote.trim() || undefined
+      });
+    } else {
+      addManualDuty({
+        memberId: manualMemberId,
+        dutyType: manualDutyType,
+        date: manualDate,
+        mealType: manualDutyType === 'COOKING' ? manualMealType : undefined,
+        note: manualNote.trim() || undefined
+      });
+    }
     setShowManualForm(false);
+    setEditingDutyId(null);
     setManualNote('');
   };
 
@@ -90,7 +105,14 @@ export const DutyManagementView: React.FC = () => {
             <span>Auto-Generate</span>
           </button>
           <button
-            onClick={() => setShowManualForm(!showManualForm)}
+            onClick={() => {
+              setEditingDutyId(null);
+              setManualMemberId(state.members[0]?.id || '');
+              setManualDutyType('BAZAR');
+              setManualDate(new Date().toISOString().split('T')[0]);
+              setManualNote('');
+              setShowManualForm(!showManualForm);
+            }}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -105,7 +127,7 @@ export const DutyManagementView: React.FC = () => {
           onSubmit={handleManualSubmit}
           className="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs space-y-4 animate-in fade-in duration-150"
         >
-          <h3 className="text-sm font-bold text-slate-900">Assign Custom Duty Shift</h3>
+          <h3 className="text-sm font-bold text-slate-900">{editingDutyId ? 'Edit Duty Assignment' : 'Assign Custom Duty Shift'}</h3>
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Member</label>
@@ -172,7 +194,10 @@ export const DutyManagementView: React.FC = () => {
           <div className="flex justify-end gap-2">
             <button
               type="button"
-              onClick={() => setShowManualForm(false)}
+              onClick={() => {
+                setShowManualForm(false);
+                setEditingDutyId(null);
+              }}
               className="px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900"
             >
               Cancel
@@ -412,6 +437,38 @@ export const DutyManagementView: React.FC = () => {
                         >
                           Missed
                         </button>
+                      )}
+                      {/* Edit and Delete for Admins */}
+                      {currentRole === 'ADMIN' && (
+                        <>
+                          <button
+                            onClick={() => {
+                              setEditingDutyId(duty.id);
+                              setManualMemberId(duty.memberId);
+                              setManualDutyType(duty.dutyType);
+                              if (duty.mealType) setManualMealType(duty.mealType as any);
+                              setManualDate(duty.date);
+                              setManualNote(duty.note || '');
+                              setShowManualForm(true);
+                            }}
+                            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            title="Edit Duty"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          
+                          <button
+                            onClick={() => {
+                              if (window.confirm('Are you sure you want to delete this duty?')) {
+                                deleteDuty(duty.id);
+                              }
+                            }}
+                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                            title="Delete Duty"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </>
                       )}
                     </div>
                   )}

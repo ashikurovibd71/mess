@@ -27,7 +27,7 @@ export const LedgerView: React.FC = () => {
   // Build unified ledger entries
   const currentMonthAccount = state.monthlyAccounts.find(
     (m) => m.monthYear === state.selectedMonth
-  ) || { openingBalance: 2000 };
+  ) || { openingBalance: 0 };
 
   const allLedgerEntries = useMemo(() => {
     return buildLedger(

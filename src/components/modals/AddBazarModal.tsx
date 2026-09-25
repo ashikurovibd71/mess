@@ -7,6 +7,20 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   initialItems?: { itemName: string; quantity: number; unit: string; unitPrice?: number }[];
+  initialData?: {
+    id: string;
+    purchasedBy: string;
+    marketName: string;
+    date: string;
+    note?: string;
+    receiptUrl?: string;
+    items: {
+      itemName: string;
+      quantity: number;
+      unit: string;
+      unitPrice: number;
+    }[];
+  };
 }
 
 interface ItemRow {
@@ -16,16 +30,24 @@ interface ItemRow {
   unitPrice: string;
 }
 
-export const AddBazarModal: React.FC<Props> = ({ isOpen, onClose, initialItems }) => {
-  const { activeMembers, addBazarRecord, isMonthClosed, currentUser } = useMess();
+export const AddBazarModal: React.FC<Props> = ({ isOpen, onClose, initialItems, initialData }) => {
+  const { activeMembers, addBazarRecord, updateBazarRecord, isMonthClosed, currentUser } = useMess();
 
-  const [purchasedBy, setPurchasedBy] = useState(currentUser.id);
-  const [marketName, setMarketName] = useState('Dhanmondi Raw Market (ধানমন্ডি কাঁচাবাজার)');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [note, setNote] = useState('');
-  const [receiptUrl, setReceiptUrl] = useState('');
+  const [purchasedBy, setPurchasedBy] = useState(initialData?.purchasedBy || currentUser.id);
+  const [marketName, setMarketName] = useState(initialData?.marketName || 'Dhanmondi Raw Market (ধানমন্ডি কাঁচাবাজার)');
+  const [date, setDate] = useState(initialData?.date || new Date().toISOString().split('T')[0]);
+  const [note, setNote] = useState(initialData?.note || '');
+  const [receiptUrl, setReceiptUrl] = useState(initialData?.receiptUrl || '');
 
   const [items, setItems] = useState<ItemRow[]>(() => {
+    if (initialData && initialData.items) {
+      return initialData.items.map((i) => ({
+        itemName: i.itemName,
+        quantity: String(i.quantity || 1),
+        unit: i.unit || 'kg',
+        unitPrice: String(i.unitPrice || 0)
+      }));
+    }
     if (initialItems && initialItems.length > 0) {
       return initialItems.map((i) => ({
         itemName: i.itemName,
@@ -40,6 +62,42 @@ export const AddBazarModal: React.FC<Props> = ({ isOpen, onClose, initialItems }
       { itemName: 'Fresh Vegetables (সবজি)', quantity: '1', unit: 'pack', unitPrice: '180' }
     ];
   });
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setPurchasedBy(initialData?.purchasedBy || currentUser.id);
+      setMarketName(initialData?.marketName || 'Dhanmondi Raw Market (ধানমন্ডি কাঁচাবাজার)');
+      setDate(initialData?.date || new Date().toISOString().split('T')[0]);
+      setNote(initialData?.note || '');
+      setReceiptUrl(initialData?.receiptUrl || '');
+      
+      if (initialData && initialData.items) {
+        setItems(
+          initialData.items.map((i) => ({
+            itemName: i.itemName,
+            quantity: String(i.quantity || 1),
+            unit: i.unit || 'kg',
+            unitPrice: String(i.unitPrice || 0)
+          }))
+        );
+      } else if (initialItems && initialItems.length > 0) {
+        setItems(
+          initialItems.map((i) => ({
+            itemName: i.itemName,
+            quantity: String(i.quantity || 1),
+            unit: i.unit || 'kg',
+            unitPrice: String(i.unitPrice || 0)
+          }))
+        );
+      } else {
+        setItems([
+          { itemName: 'Miniket Rice (চাল)', quantity: '5', unit: 'kg', unitPrice: '80' },
+          { itemName: 'Rui Fish (মাছ)', quantity: '1.5', unit: 'kg', unitPrice: '320' },
+          { itemName: 'Fresh Vegetables (সবজি)', quantity: '1', unit: 'pack', unitPrice: '180' }
+        ]);
+      }
+    }
+  }, [isOpen, initialData, initialItems, currentUser.id]);
 
   if (!isOpen) return null;
 
@@ -79,24 +137,37 @@ export const AddBazarModal: React.FC<Props> = ({ isOpen, onClose, initialItems }
       return;
     }
 
-    addBazarRecord({
-      purchasedBy,
-      marketName: marketName.trim() || 'Local Market',
-      date,
-      note: note.trim() || undefined,
-      receiptUrl: receiptUrl.trim() || undefined,
-      items: validItems.map((item) => {
-        const quantity = parseFloat(item.quantity) || 1;
-        const unitPrice = parseFloat(item.unitPrice) || 0;
-        return {
-          itemName: item.itemName.trim(),
-          quantity,
-          unit: item.unit.trim() || 'kg',
-          unitPrice,
-          totalPrice: roundMoney(quantity * unitPrice)
-        };
-      })
+    const formattedItems = validItems.map((item) => {
+      const quantity = parseFloat(item.quantity) || 1;
+      const unitPrice = parseFloat(item.unitPrice) || 0;
+      return {
+        itemName: item.itemName.trim(),
+        quantity,
+        unit: item.unit.trim() || 'kg',
+        unitPrice,
+        totalPrice: roundMoney(quantity * unitPrice)
+      };
     });
+
+    if (initialData) {
+      updateBazarRecord(initialData.id, {
+        purchasedBy,
+        marketName: marketName.trim() || 'Local Market',
+        date,
+        note: note.trim() || undefined,
+        receiptUrl: receiptUrl.trim() || undefined,
+        items: formattedItems
+      });
+    } else {
+      addBazarRecord({
+        purchasedBy,
+        marketName: marketName.trim() || 'Local Market',
+        date,
+        note: note.trim() || undefined,
+        receiptUrl: receiptUrl.trim() || undefined,
+        items: formattedItems
+      });
+    }
 
     onClose();
   };
