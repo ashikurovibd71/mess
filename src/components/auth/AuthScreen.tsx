@@ -24,7 +24,7 @@ export const AuthScreen: React.FC<Props> = ({ onContinueAsGuest }) => {
   const { state, loginWithCredentials, registerUser, dbStatus } = useMess();
 
   const [mode, setMode] = useState<'LOGIN' | 'REGISTER'>('LOGIN');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState('ashikurovi2003@gmail.com');
   const [password, setPassword] = useState('password123');
   const [name, setName] = useState('');
   const [nameBn, setNameBn] = useState('');

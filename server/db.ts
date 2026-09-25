@@ -259,8 +259,36 @@ export async function initDb() {
       `, cat);
     }
 
+    // Ensure ONLY Ovi (ADMIN) exists from default data; remove other members and cashiers
+    await client.query(`
+      DELETE FROM users 
+      WHERE email IN ('rahim.mess@gmail.com', 'karim.mess@gmail.com', 'hasan.mess@gmail.com', 'sakib.mess@gmail.com')
+         OR id IN ('user-rahim', 'user-karim', 'user-hasan', 'user-sakib');
+    `);
+
+    // Ensure Ovi - ADMIN is seeded cleanly
+    await client.query(`
+      INSERT INTO users (id, name, name_bn, email, phone, password_hash, role, status, room_number, mess_id)
+      VALUES (
+        'user-ovi',
+        'Ovi',
+        'অভি',
+        'ashikurovi2003@gmail.com',
+        '+880 1711-223344',
+        '$2b$10$K9iKLHy8YIB49FNMLkHyD.7iI9qHhpAc2l.vn8XsanOVNqYwr85gK',
+        'ADMIN',
+        'ACTIVE',
+        'Room 301',
+        $1
+      )
+      ON CONFLICT (email) DO UPDATE SET
+        name = 'Ovi',
+        role = 'ADMIN',
+        status = 'ACTIVE';
+    `, [defaultMessId]);
+
     client.release();
-    console.log('Database schema ready with clean dynamic state.');
+    console.log('Database schema ready: Only Ovi - ADMIN present as default user.');
   } catch (err) {
     console.error('Database initialization error:', err);
   }

@@ -19,7 +19,25 @@ import {
   ExpenseCategoryCode
 } from '../types';
 
-export const STORAGE_KEY = 'bachelor_mess_data_v3_pure_dynamic';
+export const STORAGE_KEY = 'bachelor_mess_data_v4_ovi_admin_only';
+
+export const OVI_ADMIN_USER: User = {
+  id: 'user-ovi',
+  name: 'Ovi',
+  nameBn: 'অভি',
+  email: 'ashikurovi2003@gmail.com',
+  phone: '+880 1711-223344',
+  role: 'ADMIN',
+  status: 'ACTIVE',
+  roomNumber: 'Room 301',
+  joinDate: '2026-09-25',
+  messId: 'mess-dhaka-01',
+  createdAt: '2026-09-25T00:00:00.000Z',
+  updatedAt: '2026-09-25T00:00:00.000Z'
+};
+
+const REMOVED_DEFAULT_USER_IDS = new Set(['user-rahim', 'user-karim', 'user-hasan', 'user-sakib']);
+const REMOVED_DEFAULT_EMAILS = new Set(['rahim.mess@gmail.com', 'karim.mess@gmail.com', 'hasan.mess@gmail.com', 'sakib.mess@gmail.com']);
 
 export interface AppState {
   currentUserId: string;
@@ -86,20 +104,33 @@ export function getInitialState(): AppState {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed: AppState = JSON.parse(stored);
+        // Filter out any obsolete dummy members/cashiers
+        if (Array.isArray(parsed.members)) {
+          parsed.members = parsed.members.filter(
+            (m) => !REMOVED_DEFAULT_USER_IDS.has(m.id) && !REMOVED_DEFAULT_EMAILS.has(m.email?.toLowerCase())
+          );
+        }
+        if (!parsed.members || parsed.members.length === 0) {
+          parsed.members = [OVI_ADMIN_USER];
+        }
+        if (REMOVED_DEFAULT_USER_IDS.has(parsed.currentUserId)) {
+          parsed.currentUserId = OVI_ADMIN_USER.id;
+        }
+        return parsed;
       }
     } catch (e) {
       console.error('Failed to load mess data from storage:', e);
     }
   }
 
-  // Pure clean dynamic state - NO hardcoded default dummy entries
+  // Pure clean dynamic state - ONLY Ovi (ADMIN) as default user
   return {
-    currentUserId: '',
+    currentUserId: OVI_ADMIN_USER.id,
     activeMessId: 'mess-dhaka-01',
     selectedMonth: '2026-09',
     mess: DEFAULT_MESS,
-    members: [],
+    members: [OVI_ADMIN_USER],
     monthlyAccounts: DEFAULT_MONTHLY_ACCOUNTS,
     categories: DEFAULT_CATEGORIES,
     contributions: [],

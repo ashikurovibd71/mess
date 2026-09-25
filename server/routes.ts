@@ -38,7 +38,14 @@ apiRouter.post('/clear-all-data', async (req: Request, res: Response) => {
     await pool.query('DELETE FROM audit_logs');
     await pool.query('DELETE FROM notifications');
 
-    res.json({ success: true, message: 'All dummy records wiped cleanly from Neon PostgreSQL.' });
+    // Remove any default members/cashiers (Rahim, Karim, Hasan, Sakib), keep only Ovi (ADMIN)
+    await pool.query(`
+      DELETE FROM users 
+      WHERE email IN ('rahim.mess@gmail.com', 'karim.mess@gmail.com', 'hasan.mess@gmail.com', 'sakib.mess@gmail.com')
+         OR id IN ('user-rahim', 'user-karim', 'user-hasan', 'user-sakib')
+    `);
+
+    res.json({ success: true, message: 'All dummy records wiped cleanly. Only Ovi (ADMIN) preserved.' });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
