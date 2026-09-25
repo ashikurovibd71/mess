@@ -1,0 +1,595 @@
+import React, { useState } from 'react';
+import { useMess } from '../../context/MessContext';
+import { formatTaka } from '../../services/accountingEngine';
+import {
+  Wallet,
+  Receipt,
+  Users,
+  PiggyBank,
+  CheckCircle2,
+  Clock,
+  ArrowRight,
+  TrendingUp,
+  AlertTriangle,
+  ArrowUpRight,
+  ArrowDownLeft,
+  CalendarCheck,
+  Utensils,
+  Plus,
+  RefreshCw,
+  ShoppingBag
+} from 'lucide-react';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Cell,
+  PieChart,
+  Pie
+} from 'recharts';
+import { AddDepositModal } from '../modals/AddDepositModal';
+import { AddBazarModal } from '../modals/AddBazarModal';
+import { AddExpenseModal } from '../modals/AddExpenseModal';
+import { RecordSettlementModal } from '../modals/RecordSettlementModal';
+import { SettlementSuggestion } from '../../types';
+
+const CATEGORY_COLORS = [
+  '#059669', // Bazar (Emerald)
+  '#2563EB', // Electricity (Blue)
+  '#D97706', // Gas (Amber)
+  '#7C3AED', // Internet (Purple)
+  '#DC2626', // House rent (Red)
+  '#0891B2', // Cleaning (Cyan)
+  '#4F46E5', // Maintenance (Indigo)
+  '#64748B'  // Other (Slate)
+];
+
+export const CombinedDashboard: React.FC<{ onNavigate: (tab: any) => void }> = ({ onNavigate }) => {
+  const {
+    currentUser,
+    currentRole,
+    financialOverview,
+    cashBalance,
+    state,
+    membersMap,
+    toggleDutyStatus
+  } = useMess();
+
+  const [isDepositOpen, setIsDepositOpen] = useState(false);
+  const [isBazarOpen, setIsBazarOpen] = useState(false);
+  const [isExpenseOpen, setIsExpenseOpen] = useState(false);
+  const [isSettlementOpen, setIsSettlementOpen] = useState(false);
+  const [selectedSuggestion, setSelectedSuggestion] = useState<SettlementSuggestion | null>(null);
+
+  // Today's date string "2026-09-25"
+  const todayStr = '2026-09-25';
+  const tomorrowStr = '2026-09-26';
+
+  // Today's duties
+  const todayDuties = state.dutySchedules.filter((d) => d.date === todayStr);
+
+  // Tomorrow's duties
+  const tomorrowDuties = state.dutySchedules.filter((d) => d.date === tomorrowStr);
+
+  // Today's meal plan
+  const todayMeal = state.mealPlans.find((m) => m.date === todayStr);
+
+  // Current user's specific financial status
+  const mySummary = financialOverview.memberSummaries.find(
+    (m) => m.memberId === currentUser.id
+  ) || {
+    totalDeposited: 0,
+    share: 0,
+    settlementsPaid: 0,
+    settlementsReceived: 0,
+    netBalance: 0,
+    statusLabel: 'SETTLED' as const
+  };
+
+  // User-specific settlement action
+  const mySuggestions = financialOverview.settlementSuggestions.filter(
+    (s) => s.fromMemberId === currentUser.id || s.toMemberId === currentUser.id
+  );
+
+  // Member balance chart data
+  const balanceChartData = financialOverview.memberSummaries.map((m) => ({
+    name: m.memberName,
+    balance: m.netBalance
+  }));
+
+  return (
+    <div className="space-y-6">
+      {/* Welcome & Financial Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-2xs">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold tracking-tight text-slate-900">
+              Welcome back, {currentUser.name}
+            </h1>
+            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+              {currentRole}
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 mt-1">
+            Dhaka Bachelor Mess · September 2026 Financial & Daily Management Overview
+          </p>
+        </div>
+
+        {/* Action quick buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsDepositOpen(true)}
+            className="px-3 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors shadow-xs"
+          >
+            + Add Deposit
+          </button>
+          <button
+            onClick={() => setIsBazarOpen(true)}
+            className="px-3 py-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors"
+          >
+            + Add Bazar
+          </button>
+          <button
+            onClick={() => setIsExpenseOpen(true)}
+            className="px-3 py-1.5 text-xs font-semibold text-rose-800 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors"
+          >
+            + Add Bill
+          </button>
+        </div>
+      </div>
+
+      {/* Primary Financial Metric Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Mess Cash Balance */}
+        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+              Mess Cash Balance
+            </span>
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
+              <Wallet className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-2 text-2xl font-bold text-slate-900 tabular-nums">
+            ৳{cashBalance.toLocaleString('en-IN')}
+          </div>
+          <div className="mt-1 text-[11px] text-slate-500">
+            Available liquid cash fund in mess drawer
+          </div>
+        </div>
+
+        {/* This Month Total Expense */}
+        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+              Total Expenses
+            </span>
+            <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-700 flex items-center justify-center">
+              <Receipt className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-2 text-2xl font-bold text-slate-900 tabular-nums">
+            ৳{financialOverview.totalExpenses.toLocaleString('en-IN')}
+          </div>
+          <div className="mt-1 text-[11px] text-slate-500">
+            Bazar (৳12,000) + Bills & Other (৳8,000)
+          </div>
+        </div>
+
+        {/* Per Member Share */}
+        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+              Per Member Share
+            </span>
+            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center">
+              <Users className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-2 text-2xl font-bold text-slate-900 tabular-nums">
+            ৳{financialOverview.perMemberShare.toLocaleString('en-IN')}
+          </div>
+          <div className="mt-1 text-[11px] text-slate-500">
+            ৳{financialOverview.totalExpenses} ÷ {financialOverview.activeMemberCount} active members
+          </div>
+        </div>
+
+        {/* Total Collections / Deposits */}
+        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+              Total Deposits
+            </span>
+            <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center">
+              <PiggyBank className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-2 text-2xl font-bold text-slate-900 tabular-nums">
+            ৳{financialOverview.totalDeposits.toLocaleString('en-IN')}
+          </div>
+          <div className="mt-1 text-[11px] text-slate-500">
+            Collected from 5 members this month
+          </div>
+        </div>
+      </div>
+
+      {/* Member Personal Financial Status Card (Section 17) */}
+      <div className="bg-slate-900 text-white p-5 rounded-xl shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+              Personal Account · {currentUser.name} ({currentUser.role})
+            </div>
+            <div className="flex items-baseline gap-3">
+              <span className="text-3xl font-extrabold tabular-nums tracking-tight">
+                {formatTaka(mySummary.netBalance, true)}
+              </span>
+              <span
+                className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                  mySummary.netBalance > 0.01
+                    ? 'bg-emerald-500/20 text-emerald-300'
+                    : mySummary.netBalance < -0.01
+                    ? 'bg-amber-500/20 text-amber-300'
+                    : 'bg-slate-700 text-slate-300'
+                }`}
+              >
+                {mySummary.netBalance > 0.01
+                  ? 'YOU SHOULD RECEIVE (পাওনাদার)'
+                  : mySummary.netBalance < -0.01
+                  ? 'YOU NEED TO PAY (দেনা রয়েছে)'
+                  : 'ALL SETTLED (পরিশোধিত)'}
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-6 text-xs border-t md:border-t-0 md:border-l border-slate-800 pt-3 md:pt-0 md:pl-6">
+            <div>
+              <div className="text-slate-400">My Share (খরচ অংশ)</div>
+              <div className="text-base font-bold text-white tabular-nums mt-0.5">
+                ৳{mySummary.share.toLocaleString('en-IN')}
+              </div>
+            </div>
+            <div>
+              <div className="text-slate-400">I Have Paid (জমা)</div>
+              <div className="text-base font-bold text-white tabular-nums mt-0.5">
+                ৳{mySummary.totalDeposited.toLocaleString('en-IN')}
+              </div>
+            </div>
+            <div>
+              <div className="text-slate-400">Net Due (ব্যালেন্স)</div>
+              <div
+                className={`text-base font-bold tabular-nums mt-0.5 ${
+                  mySummary.netBalance >= 0 ? 'text-emerald-400' : 'text-amber-400'
+                }`}
+              >
+                {formatTaka(mySummary.netBalance, true)}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Member Settlement Recommendation Action */}
+        {mySuggestions.length > 0 && (
+          <div className="mt-4 pt-3 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 text-slate-300">
+              <ArrowRight className="w-4 h-4 text-indigo-400 shrink-0" />
+              <span>
+                Recommended Settlement Action:{' '}
+                <strong className="text-white font-semibold">
+                  {mySuggestions[0].fromMemberName} → {mySuggestions[0].toMemberName} (৳
+                  {mySuggestions[0].amount.toLocaleString('en-IN')})
+                </strong>
+              </span>
+            </div>
+            <button
+              onClick={() => {
+                setSelectedSuggestion(mySuggestions[0]);
+                setIsSettlementOpen(true);
+              }}
+              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium transition-colors whitespace-nowrap self-start sm:self-auto"
+            >
+              Record This Settlement
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Two Column Layout: Today's Daily Management & Finance Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left Column: Today's Daily Mess Schedule & Meals (Section 44, 47, 56) */}
+        <div className="lg:col-span-6 space-y-6">
+          {/* Today's Duty Roster */}
+          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-2xs">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <CalendarCheck className="w-4 h-4 text-slate-700" />
+                <h2 className="text-sm font-bold text-slate-900">
+                  Today’s Duties ({todayStr})
+                </h2>
+              </div>
+              <button
+                onClick={() => onNavigate('duties')}
+                className="text-xs text-slate-500 hover:text-slate-900 font-medium flex items-center gap-1"
+              >
+                <span>View Full Roster</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-2.5">
+              {todayDuties.map((duty) => {
+                const member = membersMap.get(duty.memberId);
+                const isCompleted = duty.status === 'COMPLETED';
+
+                return (
+                  <div
+                    key={duty.id}
+                    className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                      isCompleted
+                        ? 'bg-slate-50/60 border-slate-200/80 text-slate-600'
+                        : 'bg-white border-slate-200 text-slate-900 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs ${
+                          duty.dutyType === 'BAZAR'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : duty.dutyType === 'COOKING'
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-blue-100 text-blue-800'
+                        }`}
+                      >
+                        {duty.dutyType === 'BAZAR' ? 'বা' : duty.dutyType === 'COOKING' ? 'রা' : 'প'}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-slate-900">
+                            {duty.dutyType}{' '}
+                            {duty.mealType ? `(${duty.mealType})` : ''}
+                          </span>
+                          <span className="text-xs font-medium text-slate-700">
+                            · {member?.name}
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-slate-500">
+                          {duty.note || (isCompleted ? 'Finished on schedule' : 'Assigned')}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      {isCompleted ? (
+                        <div className="flex items-center gap-1 text-emerald-700 text-xs font-medium bg-emerald-50 px-2 py-0.5 rounded">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>Done</span>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => toggleDutyStatus(duty.id)}
+                          className="px-2.5 py-1 text-xs font-medium bg-slate-900 text-white hover:bg-slate-800 rounded transition-colors"
+                        >
+                          Mark Completed
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Upcoming duties tomorrow */}
+            <div className="mt-4 pt-3 border-t border-slate-100">
+              <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                Tomorrow’s Schedule ({tomorrowStr})
+              </div>
+              <div className="flex flex-wrap gap-2 text-xs">
+                {tomorrowDuties.slice(0, 4).map((d) => {
+                  const member = membersMap.get(d.memberId);
+                  return (
+                    <div
+                      key={d.id}
+                      className="px-2.5 py-1 bg-slate-100 rounded-md text-slate-700"
+                    >
+                      <span className="text-slate-500">
+                        {d.dutyType} {d.mealType ? `(${d.mealType})` : ''}:
+                      </span>{' '}
+                      <span className="font-semibold text-slate-900">{member?.name}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Today's Meal Menu (Section 47) */}
+          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-2xs">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <Utensils className="w-4 h-4 text-slate-700" />
+                <h2 className="text-sm font-bold text-slate-900">Today’s Meal Plan (মেনু)</h2>
+              </div>
+              <button
+                onClick={() => onNavigate('meals-shopping')}
+                className="text-xs text-slate-500 hover:text-slate-900 font-medium"
+              >
+                Edit Menu
+              </button>
+            </div>
+
+            {todayMeal ? (
+              <div className="mt-3 space-y-2 text-xs">
+                <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                  <span className="font-semibold text-slate-900">Breakfast (সকাল):</span>{' '}
+                  <span className="text-slate-700">{todayMeal.breakfast}</span>
+                </div>
+                <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                  <span className="font-semibold text-slate-900">Lunch (দুপুর):</span>{' '}
+                  <span className="text-slate-700">{todayMeal.lunch}</span>
+                </div>
+                <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                  <span className="font-semibold text-slate-900">Dinner (রাত):</span>{' '}
+                  <span className="text-slate-700">{todayMeal.dinner}</span>
+                </div>
+                {todayMeal.note && (
+                  <div className="text-[11px] text-amber-800 bg-amber-50 p-2 rounded">
+                    📌 {todayMeal.note}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="mt-3 text-xs text-slate-500">No meal plan entered for today.</div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Column: Financial Breakdown Charts (Section 16) */}
+        <div className="lg:col-span-6 space-y-6">
+          {/* Member Balance Distribution Chart */}
+          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-2xs">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h2 className="text-sm font-bold text-slate-900">Member Balances (ব্যালেন্স)</h2>
+                <p className="text-xs text-slate-500">
+                  Green = Receivable (+৳) · Red = Needs to Pay (-৳)
+                </p>
+              </div>
+              <button
+                onClick={() => onNavigate('settlements')}
+                className="text-xs text-slate-500 hover:text-slate-900 font-medium flex items-center gap-1"
+              >
+                <span>Settlements</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+
+            <div className="mt-4 h-56 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={balanceChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#475569' }} />
+                  <YAxis tick={{ fontSize: 10, fill: '#64748B' }} />
+                  <Tooltip
+                    formatter={(val: any) => [`৳${val.toLocaleString('en-IN')}`, 'Net Balance']}
+                    contentStyle={{ fontSize: '12px', borderRadius: '8px', border: '1px solid #E2E8F0' }}
+                  />
+                  <Bar dataKey="balance" radius={[4, 4, 0, 0]}>
+                    {balanceChartData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.balance >= 0 ? '#10B981' : '#EF4444'}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Quick table of member shares */}
+            <div className="mt-3 divide-y divide-slate-100 text-xs">
+              {financialOverview.memberSummaries.map((m) => (
+                <div key={m.memberId} className="py-2 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-slate-900">{m.memberName}</span>
+                    <span className="text-[11px] text-slate-500">
+                      Paid: ৳{m.totalDeposited.toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                  <div
+                    className={`font-semibold tabular-nums ${
+                      m.netBalance > 0
+                        ? 'text-emerald-700'
+                        : m.netBalance < 0
+                        ? 'text-rose-700'
+                        : 'text-slate-600'
+                    }`}
+                  >
+                    {formatTaka(m.netBalance, true)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Expense Category Breakdown Chart */}
+          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-2xs">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h2 className="text-sm font-bold text-slate-900">Expenses by Category</h2>
+                <p className="text-xs text-slate-500">Distribution for September 2026</p>
+              </div>
+              <button
+                onClick={() => onNavigate('expenses')}
+                className="text-xs text-slate-500 hover:text-slate-900 font-medium"
+              >
+                All Expenses
+              </button>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-4 items-center">
+              <div className="h-44">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={financialOverview.categoryBreakdown}
+                      dataKey="amount"
+                      nameKey="category"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={36}
+                      outerRadius={65}
+                      paddingAngle={3}
+                    >
+                      {financialOverview.categoryBreakdown.map((_, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={CATEGORY_COLORS[index % CATEGORY_COLORS.length]}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(val: any) => [`৳${val.toLocaleString('en-IN')}`, 'Amount']}
+                      contentStyle={{ fontSize: '11px', borderRadius: '6px' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="space-y-1.5 text-xs">
+                {financialOverview.categoryBreakdown.slice(0, 5).map((cat, idx) => (
+                  <div key={cat.code} className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <span
+                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: CATEGORY_COLORS[idx % CATEGORY_COLORS.length] }}
+                      />
+                      <span className="text-slate-700 truncate">{cat.category}</span>
+                    </div>
+                    <span className="font-semibold text-slate-900 tabular-nums shrink-0">
+                      ৳{cat.amount.toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Modals */}
+      <AddDepositModal isOpen={isDepositOpen} onClose={() => setIsDepositOpen(false)} />
+      <AddBazarModal isOpen={isBazarOpen} onClose={() => setIsBazarOpen(false)} />
+      <AddExpenseModal isOpen={isExpenseOpen} onClose={() => setIsExpenseOpen(false)} />
+      <RecordSettlementModal
+        isOpen={isSettlementOpen}
+        onClose={() => {
+          setIsSettlementOpen(false);
+          setSelectedSuggestion(null);
+        }}
+        presetSuggestion={selectedSuggestion}
+      />
+    </div>
+  );
+};

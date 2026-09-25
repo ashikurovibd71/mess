@@ -1,0 +1,6 @@
+{
+  "name": "Bachelor Mess Accounting & Duty Management System",
+  "description": "Production-ready mess accounting, expense splitting, automatic settlement engine, daily duty roster, meal planning, and shopping manager for bachelor living.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
