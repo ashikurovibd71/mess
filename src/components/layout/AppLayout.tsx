@@ -61,7 +61,7 @@ export const AppLayout: React.FC<Props> = ({ activeTab, setActiveTab, children }
     cashBalance,
     markNotificationRead,
     markAllNotificationsRead,
-    resetDemoData,
+    clearAllDatabaseData,
     isAuthenticated,
     isAuthModalOpen,
     setIsAuthModalOpen,
@@ -326,14 +326,16 @@ export const AppLayout: React.FC<Props> = ({ activeTab, setActiveTab, children }
                     )}
 
                     <button
-                      onClick={() => {
-                        resetDemoData();
-                        setIsRoleDropdownOpen(false);
+                      onClick={async () => {
+                        if (window.confirm('Are you sure you want to clear all transactional records from Neon PostgreSQL? This cannot be undone.')) {
+                          await clearAllDatabaseData();
+                          setIsRoleDropdownOpen(false);
+                        }
                       }}
                       className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg transition-colors font-medium"
                     >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      <span>Reset to Scenario Demo Data</span>
+                      <Database className="w-3.5 h-3.5" />
+                      <span>Wipe / Clear All Data from Neon DB</span>
                     </button>
                   </div>
                 </div>

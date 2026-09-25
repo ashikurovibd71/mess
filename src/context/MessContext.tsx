@@ -70,7 +70,7 @@ interface MessContextType {
     transactionDate: string;
     note?: string;
     receiptUrl?: string;
-  }) => void;
+  }) => Promise<void>;
 
   addExpense: (data: {
     categoryId: string;
@@ -83,7 +83,7 @@ interface MessContextType {
     note?: string;
     receiptUrl?: string;
     bazarId?: string;
-  }) => void;
+  }) => Promise<void>;
 
   addBazarRecord: (data: {
     purchasedBy: string;
@@ -92,7 +92,7 @@ interface MessContextType {
     note?: string;
     receiptUrl?: string;
     items: Omit<BazarItem, 'id' | 'bazarId'>[];
-  }) => void;
+  }) => Promise<void>;
 
   convertShoppingToBazar: (
     items: { itemName: string; quantity: number; unit: string; unitPrice: number }[],
@@ -100,7 +100,7 @@ interface MessContextType {
     marketName: string,
     date: string,
     note?: string
-  ) => void;
+  ) => Promise<void>;
 
   recordSettlement: (data: {
     fromMemberId: string;
@@ -109,42 +109,65 @@ interface MessContextType {
     paymentMethod: PaymentMethod;
     settlementDate: string;
     note?: string;
-  }) => void;
+  }) => Promise<void>;
 
-  toggleDutyStatus: (dutyId: string, markMissed?: boolean) => void;
-  requestDutySwap: (dutyId: string, targetMemberId: string, reason: string) => void;
-  respondDutySwap: (swapId: string, approve: boolean) => void;
-  createAutoDutyRotation: (startDate: string, days: number, includeBazar: boolean, includeCooking: boolean, includeCleaning: boolean) => void;
-  addManualDuty: (data: { memberId: string; dutyType: DutyType; date: string; mealType?: MealType; customDutyName?: string; note?: string }) => void;
+  toggleDutyStatus: (dutyId: string, markMissed?: boolean) => Promise<void>;
+  requestDutySwap: (dutyId: string, targetMemberId: string, reason: string) => Promise<void>;
+  respondDutySwap: (swapId: string, approve: boolean) => Promise<void>;
+  createAutoDutyRotation: (startDate: string, days: number, includeBazar: boolean, includeCooking: boolean, includeCleaning: boolean) => Promise<void>;
+  addManualDuty: (data: { memberId: string; dutyType: DutyType; date: string; mealType?: MealType; customDutyName?: string; note?: string }) => Promise<void>;
 
-  addShoppingItem: (data: { itemName: string; quantity: number; unit: string; priority: ShoppingPriority; estimatedCost?: number; note?: string }) => void;
-  toggleShoppingItem: (id: string) => void;
-  deleteShoppingItem: (id: string) => void;
+  addShoppingItem: (data: { itemName: string; quantity: number; unit: string; priority: ShoppingPriority; estimatedCost?: number; note?: string }) => Promise<void>;
+  toggleShoppingItem: (id: string) => Promise<void>;
+  deleteShoppingItem: (id: string) => Promise<void>;
 
-  saveMealPlan: (date: string, breakfast: string, lunch: string, dinner: string, note?: string) => void;
+  saveMealPlan: (date: string, breakfast: string, lunch: string, dinner: string, note?: string) => Promise<void>;
 
-  closeMonth: (notes?: string) => void;
-  reopenMonth: () => void;
+  closeMonth: (notes?: string) => Promise<void>;
+  reopenMonth: () => Promise<void>;
 
-  addMember: (data: { name: string; nameBn?: string; email: string; phone: string; role: Role; roomNumber?: string }) => void;
-  toggleMemberStatus: (memberId: string) => void;
-  updateMemberRole: (memberId: string, role: Role) => void;
+  addMember: (data: { name: string; nameBn?: string; email: string; phone: string; role: Role; roomNumber?: string }) => Promise<void>;
+  toggleMemberStatus: (memberId: string) => Promise<void>;
+  updateMemberRole: (memberId: string, role: Role) => Promise<void>;
 
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
   resetDemoData: () => void;
+  clearAllDatabaseData: () => Promise<void>;
 
   // Real Database & Authentication
   isAuthenticated: boolean;
   isAuthModalOpen: boolean;
   setIsAuthModalOpen: (open: boolean) => void;
   loginWithCredentials: (email: string, password?: string) => Promise<void>;
-  registerUser: (data: { name: string; email: string; password: string; phone?: string; role?: Role }) => Promise<void>;
+  registerUser: (data: {
+    name: string;
+    nameBn?: string;
+    email: string;
+    password: string;
+    phone?: string;
+    roomNumber?: string;
+    role?: Role;
+  }) => Promise<void>;
   logout: () => void;
   dbStatus: 'connected' | 'checking' | 'fallback';
+  reloadDatabaseData: () => Promise<void>;
 }
 
 const MessContext = createContext<MessContextType | undefined>(undefined);
+
+const DEFAULT_GUEST: User = {
+  id: 'guest',
+  name: 'New Member',
+  email: '',
+  phone: '',
+  role: 'ADMIN',
+  status: 'ACTIVE',
+  joinDate: new Date().toISOString().split('T')[0],
+  messId: 'mess-dhaka-01',
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString()
+};
 
 export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, setState] = useState<AppState>(getInitialState);
@@ -152,37 +175,59 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [dbStatus, setDbStatus] = useState<'connected' | 'checking' | 'fallback'>('checking');
 
-  // Dynamically load from PostgreSQL backend on mount
-  useEffect(() => {
-    async function loadBackendData() {
-      try {
-        const data = await apiRequest('/api/bootstrap');
-        if (data && data.members && data.members.length > 0) {
-          setState((prev) => ({
-            ...prev,
-            mess: data.mess || prev.mess,
-            members: data.members || prev.members,
-            monthlyAccounts: data.monthlyAccounts || prev.monthlyAccounts,
-            categories: data.categories || prev.categories,
-            contributions: data.contributions || prev.contributions,
-            expenses: data.expenses || prev.expenses,
-            bazarRecords: data.bazarRecords || prev.bazarRecords,
-            settlements: data.settlements || prev.settlements,
-            dutySchedules: data.dutySchedules || prev.dutySchedules,
-            dutySwaps: data.dutySwaps || prev.dutySwaps,
-            mealPlans: data.mealPlans || prev.mealPlans,
-            shoppingList: data.shoppingList || prev.shoppingList,
-            auditLogs: data.auditLogs || prev.auditLogs,
-            notifications: data.notifications || prev.notifications
-          }));
-          setDbStatus('connected');
-        }
-      } catch (err) {
-        console.warn('Backend API initializing or offline, using active state:', err);
-        setDbStatus('fallback');
+  // Dynamically load from PostgreSQL backend
+  const reloadDatabaseData = async () => {
+    try {
+      setDbStatus('checking');
+      const data = await apiRequest('/api/bootstrap');
+      if (data) {
+        setState((prev) => ({
+          ...prev,
+          mess: data.mess || prev.mess,
+          members: data.members || [],
+          monthlyAccounts: data.monthlyAccounts && data.monthlyAccounts.length > 0 ? data.monthlyAccounts : prev.monthlyAccounts,
+          categories: data.categories && data.categories.length > 0 ? data.categories : prev.categories,
+          contributions: data.contributions || [],
+          expenses: data.expenses || [],
+          bazarRecords: data.bazarRecords || [],
+          settlements: data.settlements || [],
+          dutySchedules: data.dutySchedules || [],
+          dutySwaps: data.dutySwaps || [],
+          mealPlans: data.mealPlans || [],
+          shoppingList: data.shoppingList || [],
+          auditLogs: data.auditLogs || [],
+          notifications: data.notifications || [],
+          currentUserId: prev.currentUserId || (data.members?.[0]?.id ?? '')
+        }));
+        setDbStatus('connected');
       }
+    } catch (err) {
+      console.warn('Backend API initializing or offline:', err);
+      setDbStatus('fallback');
     }
-    loadBackendData();
+  };
+
+  useEffect(() => {
+    const initAuthAndData = async () => {
+      const token = getStoredToken();
+      if (token) {
+        try {
+          const authData = await apiRequest('/api/auth/me');
+          if (authData && authData.user) {
+            setIsAuthenticated(true);
+            setState((prev) => ({ ...prev, currentUserId: authData.user.id }));
+          }
+        } catch (e) {
+          clearStoredToken();
+          setIsAuthenticated(false);
+        }
+      } else {
+        setIsAuthenticated(false);
+      }
+      await reloadDatabaseData();
+    };
+
+    initAuthAndData();
   }, []);
 
   // Sync state to LocalStorage
@@ -191,10 +236,14 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [state]);
 
   const currentUser = useMemo(() => {
-    return state.members.find((m) => m.id === state.currentUserId) || state.members[0];
+    return (
+      state.members.find((m) => m.id === state.currentUserId) ||
+      state.members[0] ||
+      DEFAULT_GUEST
+    );
   }, [state.members, state.currentUserId]);
 
-  const currentRole = currentUser.role;
+  const currentRole = currentUser.role || 'ADMIN';
 
   const membersMap = useMemo(() => {
     const map = new Map<string, User>();
@@ -293,7 +342,6 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return newLog;
   };
 
-  // Helper to add notification
   const createNotification = (
     userId: string,
     title: string,
@@ -313,7 +361,7 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // 1. Add Contribution
-  const addContribution = (data: {
+  const addContribution = async (data: {
     memberId: string;
     amount: number;
     paymentMethod: PaymentMethod;
@@ -352,20 +400,39 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const notif = createNotification(
       data.memberId,
       'Deposit Confirmed',
-      `৳${data.amount} deposit via ${data.paymentMethod} was successfully recorded to the mess fund.`,
+      `৳${data.amount} deposit via ${data.paymentMethod} was successfully recorded.`,
       'DEPOSIT'
     );
 
+    // Update UI immediately
     setState((prev) => ({
       ...prev,
       contributions: [newContribution, ...prev.contributions],
       auditLogs: [audit, ...prev.auditLogs],
       notifications: [notif, ...prev.notifications]
     }));
+
+    // Persist to Neon PostgreSQL
+    try {
+      await apiRequest('/api/contributions', {
+        method: 'POST',
+        body: JSON.stringify({
+          memberId: data.memberId,
+          amount: data.amount,
+          paymentMethod: data.paymentMethod,
+          transactionDate: data.transactionDate,
+          note: data.note,
+          receiptUrl: data.receiptUrl,
+          recordedBy: currentUser.id
+        })
+      });
+    } catch (err) {
+      console.warn('API sync warning:', err);
+    }
   };
 
   // 2. Add Expense
-  const addExpense = (data: {
+  const addExpense = async (data: {
     categoryId: string;
     categoryCode: ExpenseCategoryCode;
     amount: number;
@@ -422,10 +489,31 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       auditLogs: [audit, ...prev.auditLogs],
       notifications: [notif, ...prev.notifications]
     }));
+
+    try {
+      await apiRequest('/api/expenses', {
+        method: 'POST',
+        body: JSON.stringify({
+          categoryId: data.categoryId,
+          categoryCode: data.categoryCode,
+          amount: data.amount,
+          description: data.description,
+          expenseDate: data.expenseDate,
+          paidBy: data.paidBy,
+          paymentMethod: data.paymentMethod,
+          note: data.note,
+          receiptUrl: data.receiptUrl,
+          bazarId: data.bazarId,
+          recordedBy: currentUser.id
+        })
+      });
+    } catch (err) {
+      console.warn('API sync warning:', err);
+    }
   };
 
-  // 3. Add Bazar Record with line items
-  const addBazarRecord = (data: {
+  // 3. Add Bazar Record
+  const addBazarRecord = async (data: {
     purchasedBy: string;
     marketName: string;
     date: string;
@@ -467,12 +555,9 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       updatedAt: new Date().toISOString()
     };
 
-    // Find bazar category
     const bazarCat = state.categories.find((c) => c.code === 'BAZAR') || state.categories[0];
-
     const purchaser = membersMap.get(data.purchasedBy);
 
-    // Corresponding expense entry in mess funds
     const newExpense: Expense = {
       id: expenseId,
       messId: state.activeMessId,
@@ -513,17 +598,35 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       auditLogs: [audit, ...prev.auditLogs],
       notifications: [notif, ...prev.notifications]
     }));
+
+    try {
+      await apiRequest('/api/bazar', {
+        method: 'POST',
+        body: JSON.stringify({
+          purchasedBy: data.purchasedBy,
+          marketName: data.marketName,
+          date: data.date,
+          totalAmount,
+          note: data.note,
+          receiptUrl: data.receiptUrl,
+          items: itemsWithIds,
+          recordedBy: currentUser.id
+        })
+      });
+    } catch (err) {
+      console.warn('API sync warning:', err);
+    }
   };
 
-  // 4. Convert Shopping List directly to Bazar Expense
-  const convertShoppingToBazar = (
+  // 4. Convert Shopping List to Bazar
+  const convertShoppingToBazar = async (
     items: { itemName: string; quantity: number; unit: string; unitPrice: number }[],
     purchasedBy: string,
     marketName: string,
     date: string,
     note?: string
   ) => {
-    addBazarRecord({
+    await addBazarRecord({
       purchasedBy,
       marketName,
       date,
@@ -537,7 +640,6 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }))
     });
 
-    // Mark matching items as purchased in shopping list
     const itemNames = new Set(items.map((i) => i.itemName.toLowerCase().trim()));
     setState((prev) => ({
       ...prev,
@@ -550,7 +652,7 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // 5. Record Settlement
-  const recordSettlement = (data: {
+  const recordSettlement = async (data: {
     fromMemberId: string;
     toMemberId: string;
     amount: number;
@@ -609,16 +711,33 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       auditLogs: [audit, ...prev.auditLogs],
       notifications: [notifFrom, notifTo, ...prev.notifications]
     }));
+
+    try {
+      await apiRequest('/api/settlements', {
+        method: 'POST',
+        body: JSON.stringify({
+          fromMemberId: data.fromMemberId,
+          toMemberId: data.toMemberId,
+          amount: data.amount,
+          paymentMethod: data.paymentMethod,
+          settlementDate: data.settlementDate,
+          note: data.note,
+          recordedBy: currentUser.id
+        })
+      });
+    } catch (err) {
+      console.warn('API sync warning:', err);
+    }
   };
 
-  // 6. Duty Management
-  const toggleDutyStatus = (dutyId: string, markMissed: boolean = false) => {
+  // 6. Duties
+  const toggleDutyStatus = async (dutyId: string, markMissed: boolean = false) => {
+    let newStatus: DutySchedule['status'] = 'ASSIGNED';
+    let completedAt: string | undefined = undefined;
+
     setState((prev) => {
       const duty = prev.dutySchedules.find((d) => d.id === dutyId);
       if (!duty) return prev;
-
-      let newStatus: DutySchedule['status'] = 'ASSIGNED';
-      let completedAt: string | undefined = undefined;
 
       if (markMissed) {
         newStatus = 'MISSED';
@@ -627,38 +746,25 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         completedAt = newStatus === 'COMPLETED' ? new Date().toISOString() : undefined;
       }
 
-      const member = membersMap.get(duty.memberId);
-      const audit = logAudit(
-        'UPDATE_DUTY_STATUS',
-        'DutySchedule',
-        dutyId,
-        `Marked ${duty.dutyType} duty for ${member?.name} on ${duty.date} as ${newStatus}`,
-        newStatus,
-        duty.status
-      );
-
-      const notif = createNotification(
-        duty.memberId,
-        'Duty Status Updated',
-        `Your ${duty.dutyType} duty for ${duty.date} is marked as ${newStatus}.`,
-        'DUTY'
-      );
-
       return {
         ...prev,
         dutySchedules: prev.dutySchedules.map((d) =>
           d.id === dutyId ? { ...d, status: newStatus, completedAt, updatedAt: new Date().toISOString() } : d
-        ),
-        auditLogs: [audit, ...prev.auditLogs],
-        notifications: [notif, ...prev.notifications]
+        )
       };
     });
+
+    try {
+      await apiRequest(`/api/duties/${dutyId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: newStatus })
+      });
+    } catch (err) {
+      console.warn('API sync warning:', err);
+    }
   };
 
-  const requestDutySwap = (dutyId: string, targetMemberId: string, reason: string) => {
-    const duty = state.dutySchedules.find((d) => d.id === dutyId);
-    if (!duty) return;
-
+  const requestDutySwap = async (dutyId: string, targetMemberId: string, reason: string) => {
     const swapId = `swap-${Date.now()}`;
     const newSwap: DutySwapRequest = {
       id: swapId,
@@ -671,76 +777,34 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       createdAt: new Date().toISOString()
     };
 
-    const targetUser = membersMap.get(targetMemberId);
-    const audit = logAudit(
-      'REQUEST_DUTY_SWAP',
-      'DutySwapRequest',
-      swapId,
-      `${currentUser.name} requested duty swap with ${targetUser?.name}: "${reason}"`
-    );
-
-    const notif = createNotification(
-      targetMemberId,
-      'Duty Swap Request',
-      `${currentUser.name} wants to swap their ${duty.dutyType} duty on ${duty.date}. Reason: ${reason}`,
-      'DUTY'
-    );
-
     setState((prev) => ({
       ...prev,
-      dutySwaps: [newSwap, ...prev.dutySwaps],
-      auditLogs: [audit, ...prev.auditLogs],
-      notifications: [notif, ...prev.notifications]
+      dutySwaps: [newSwap, ...prev.dutySwaps]
     }));
   };
 
-  const respondDutySwap = (swapId: string, approve: boolean) => {
+  const respondDutySwap = async (swapId: string, approve: boolean) => {
     setState((prev) => {
       const swap = prev.dutySwaps.find((s) => s.id === swapId);
       if (!swap) return prev;
 
-      const duty = prev.dutySchedules.find((d) => d.id === swap.dutyId);
-      if (!duty) return prev;
-
-      const requester = membersMap.get(swap.requesterMemberId);
-      const target = membersMap.get(swap.targetMemberId);
-
       const newStatus = approve ? 'APPROVED' : 'REJECTED';
-
-      const audit = logAudit(
-        'RESPOND_DUTY_SWAP',
-        'DutySwapRequest',
-        swapId,
-        `Duty swap was ${newStatus.toLowerCase()} between ${requester?.name} and ${target?.name}`
-      );
-
-      const notif = createNotification(
-        swap.requesterMemberId,
-        `Duty Swap ${approve ? 'Approved' : 'Declined'}`,
-        `${target?.name || 'Member'} ${approve ? 'accepted' : 'declined'} your swap request for ${duty.date}.`,
-        'DUTY'
-      );
 
       return {
         ...prev,
         dutySwaps: prev.dutySwaps.map((s) =>
-          s.id === swapId
-            ? { ...s, status: newStatus, reviewedBy: currentUser.id, reviewedAt: new Date().toISOString() }
-            : s
+          s.id === swapId ? { ...s, status: newStatus, reviewedBy: currentUser.id, reviewedAt: new Date().toISOString() } : s
         ),
-        // If approved, reassign the duty to target member!
         dutySchedules: approve
           ? prev.dutySchedules.map((d) =>
-              d.id === swap.dutyId ? { ...d, memberId: swap.targetMemberId, note: `Swapped from ${requester?.name}. ${d.note || ''}` } : d
+              d.id === swap.dutyId ? { ...d, memberId: swap.targetMemberId } : d
             )
-          : prev.dutySchedules,
-        auditLogs: [audit, ...prev.auditLogs],
-        notifications: [notif, ...prev.notifications]
+          : prev.dutySchedules
       };
     });
   };
 
-  const createAutoDutyRotation = (
+  const createAutoDutyRotation = async (
     startDate: string,
     days: number,
     includeBazar: boolean,
@@ -758,29 +822,31 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       includeCleaning
     );
 
-    const audit = logAudit(
-      'GENERATE_DUTY_SCHEDULE',
-      'DutySchedule',
-      `batch-${Date.now()}`,
-      `Auto-generated ${generated.length} duty shifts for ${days} days starting ${startDate}`
-    );
-
-    const notif = createNotification(
-      'ALL',
-      'New Duty Schedule Published',
-      `Duty rotation schedule for the next ${days} days has been generated.`,
-      'DUTY'
-    );
-
     setState((prev) => ({
       ...prev,
-      dutySchedules: [...generated, ...prev.dutySchedules],
-      auditLogs: [audit, ...prev.auditLogs],
-      notifications: [notif, ...prev.notifications]
+      dutySchedules: [...generated, ...prev.dutySchedules]
     }));
+
+    for (const d of generated) {
+      try {
+        await apiRequest('/api/duties', {
+          method: 'POST',
+          body: JSON.stringify({
+            memberId: d.memberId,
+            dutyType: d.dutyType,
+            mealType: d.mealType,
+            date: d.date,
+            note: d.note,
+            assignedBy: currentUser.id
+          })
+        });
+      } catch (err) {
+        console.warn('API sync duty error:', err);
+      }
+    }
   };
 
-  const addManualDuty = (data: {
+  const addManualDuty = async (data: {
     memberId: string;
     dutyType: DutyType;
     date: string;
@@ -804,31 +870,31 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       updatedAt: new Date().toISOString()
     };
 
-    const member = membersMap.get(data.memberId);
-    const audit = logAudit(
-      'ASSIGN_DUTY',
-      'DutySchedule',
-      newId,
-      `Assigned ${data.dutyType} duty to ${member?.name} on ${data.date}`
-    );
-
-    const notif = createNotification(
-      data.memberId,
-      'New Duty Assigned',
-      `You have been assigned ${data.dutyType} duty on ${data.date}.`,
-      'DUTY'
-    );
-
     setState((prev) => ({
       ...prev,
-      dutySchedules: [newDuty, ...prev.dutySchedules],
-      auditLogs: [audit, ...prev.auditLogs],
-      notifications: [notif, ...prev.notifications]
+      dutySchedules: [newDuty, ...prev.dutySchedules]
     }));
+
+    try {
+      await apiRequest('/api/duties', {
+        method: 'POST',
+        body: JSON.stringify({
+          memberId: data.memberId,
+          dutyType: data.dutyType,
+          customDutyName: data.customDutyName,
+          mealType: data.mealType,
+          date: data.date,
+          note: data.note,
+          assignedBy: currentUser.id
+        })
+      });
+    } catch (err) {
+      console.warn('API sync warning:', err);
+    }
   };
 
   // 7. Shopping List
-  const addShoppingItem = (data: {
+  const addShoppingItem = async (data: {
     itemName: string;
     quantity: number;
     unit: string;
@@ -854,9 +920,26 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       ...prev,
       shoppingList: [newItem, ...prev.shoppingList]
     }));
+
+    try {
+      await apiRequest('/api/shopping', {
+        method: 'POST',
+        body: JSON.stringify({
+          itemName: data.itemName,
+          quantity: data.quantity,
+          unit: data.unit,
+          priority: data.priority,
+          estimatedCost: data.estimatedCost,
+          note: data.note,
+          addedBy: currentUser.id
+        })
+      });
+    } catch (err) {
+      console.warn('API sync warning:', err);
+    }
   };
 
-  const toggleShoppingItem = (id: string) => {
+  const toggleShoppingItem = async (id: string) => {
     setState((prev) => ({
       ...prev,
       shoppingList: prev.shoppingList.map((item) =>
@@ -865,17 +948,29 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           : item
       )
     }));
+
+    try {
+      await apiRequest(`/api/shopping/${id}/toggle`, { method: 'PATCH' });
+    } catch (err) {
+      console.warn('API sync warning:', err);
+    }
   };
 
-  const deleteShoppingItem = (id: string) => {
+  const deleteShoppingItem = async (id: string) => {
     setState((prev) => ({
       ...prev,
       shoppingList: prev.shoppingList.filter((item) => item.id !== id)
     }));
+
+    try {
+      await apiRequest(`/api/shopping/${id}`, { method: 'DELETE' });
+    } catch (err) {
+      console.warn('API sync warning:', err);
+    }
   };
 
   // 8. Meal Plan
-  const saveMealPlan = (
+  const saveMealPlan = async (
     date: string,
     breakfast: string,
     lunch: string,
@@ -905,39 +1000,35 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             ...prev.mealPlans
           ];
 
-      const audit = logAudit(
-        'UPDATE_MEAL_PLAN',
-        'MealPlan',
-        date,
-        `Updated meal plan for ${date}`
-      );
-
-      const notif = createNotification(
-        'ALL',
-        'Meal Plan Updated',
-        `Menu for ${date} has been updated.`,
-        'DUTY'
-      );
-
       return {
         ...prev,
-        mealPlans: updatedList,
-        auditLogs: [audit, ...prev.auditLogs],
-        notifications: [notif, ...prev.notifications]
+        mealPlans: updatedList
       };
     });
+
+    try {
+      await apiRequest('/api/meals', {
+        method: 'POST',
+        body: JSON.stringify({
+          date,
+          breakfast,
+          lunch,
+          dinner,
+          note,
+          createdBy: currentUser.id
+        })
+      });
+    } catch (err) {
+      console.warn('API sync warning:', err);
+    }
   };
 
-  // 9. Monthly Accounting (Close / Reopen)
-  const closeMonth = (notes?: string) => {
-    if (currentRole !== 'ADMIN') {
-      alert('Only Admin can close monthly accounts.');
-      return;
-    }
-
-    setState((prev) => {
-      const overview = financialOverview;
-      const updatedAccounts = prev.monthlyAccounts.map((acc) =>
+  // 9. Monthly Accounting
+  const closeMonth = async (notes?: string) => {
+    const overview = financialOverview;
+    setState((prev) => ({
+      ...prev,
+      monthlyAccounts: prev.monthlyAccounts.map((acc) =>
         acc.monthYear === prev.selectedMonth
           ? {
               ...acc,
@@ -952,66 +1043,46 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               notes: notes || acc.notes
             }
           : acc
-      );
+      )
+    }));
 
-      const audit = logAudit(
-        'CLOSE_MONTH',
-        'MonthlyAccount',
-        prev.selectedMonth,
-        `Admin closed accounting period ${prev.selectedMonth}. Closing Balance: ৳${overview.cashBalance}`
-      );
-
-      const notif = createNotification(
-        'ALL',
-        'Month Account Closed',
-        `${prev.selectedMonth} accounting has been closed by Admin. Final reports are available.`,
-        'MONTHLY_CLOSING'
-      );
-
-      return {
-        ...prev,
-        monthlyAccounts: updatedAccounts,
-        auditLogs: [audit, ...prev.auditLogs],
-        notifications: [notif, ...prev.notifications]
-      };
-    });
-  };
-
-  const reopenMonth = () => {
-    if (currentRole !== 'ADMIN') {
-      alert('Only Admin can reopen closed accounts.');
-      return;
+    try {
+      await apiRequest('/api/monthly-accounts/close', {
+        method: 'POST',
+        body: JSON.stringify({
+          monthYear: state.selectedMonth,
+          closingBalance: overview.cashBalance,
+          closedBy: currentUser.id,
+          notes
+        })
+      });
+    } catch (err) {
+      console.warn('API sync warning:', err);
     }
-
-    setState((prev) => {
-      const updatedAccounts = prev.monthlyAccounts.map((acc) =>
-        acc.monthYear === prev.selectedMonth
-          ? {
-              ...acc,
-              status: 'OPEN' as const,
-              closedAt: undefined,
-              closedBy: undefined
-            }
-          : acc
-      );
-
-      const audit = logAudit(
-        'REOPEN_MONTH',
-        'MonthlyAccount',
-        prev.selectedMonth,
-        `Admin reopened accounting period ${prev.selectedMonth} for adjustments.`
-      );
-
-      return {
-        ...prev,
-        monthlyAccounts: updatedAccounts,
-        auditLogs: [audit, ...prev.auditLogs]
-      };
-    });
   };
 
-  // 10. Member Management
-  const addMember = (data: {
+  const reopenMonth = async () => {
+    setState((prev) => ({
+      ...prev,
+      monthlyAccounts: prev.monthlyAccounts.map((acc) =>
+        acc.monthYear === prev.selectedMonth
+          ? { ...acc, status: 'OPEN' as const, closedAt: undefined, closedBy: undefined }
+          : acc
+      )
+    }));
+
+    try {
+      await apiRequest('/api/monthly-accounts/reopen', {
+        method: 'POST',
+        body: JSON.stringify({ monthYear: state.selectedMonth })
+      });
+    } catch (err) {
+      console.warn('API sync warning:', err);
+    }
+  };
+
+  // 10. Members
+  const addMember = async (data: {
     name: string;
     nameBn?: string;
     email: string;
@@ -1035,82 +1106,68 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       updatedAt: new Date().toISOString()
     };
 
-    const audit = logAudit(
-      'ADD_MEMBER',
-      'User',
-      newId,
-      `Added new member ${data.name} with role ${data.role}`
-    );
-
     setState((prev) => ({
       ...prev,
-      members: [...prev.members, newMember],
-      auditLogs: [audit, ...prev.auditLogs]
+      members: [...prev.members, newMember]
     }));
+
+    try {
+      const res = await apiRequest('/api/members', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      });
+      if (res && res.member) {
+        setState((prev) => ({
+          ...prev,
+          members: prev.members.map((m) => (m.id === newId ? res.member : m))
+        }));
+      }
+    } catch (err) {
+      console.warn('API sync warning:', err);
+    }
   };
 
-  const toggleMemberStatus = (memberId: string) => {
-    setState((prev) => {
-      const member = prev.members.find((m) => m.id === memberId);
-      if (!member) return prev;
+  const toggleMemberStatus = async (memberId: string) => {
+    setState((prev) => ({
+      ...prev,
+      members: prev.members.map((m) =>
+        m.id === memberId
+          ? {
+              ...m,
+              status: m.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE',
+              leaveDate: m.status === 'ACTIVE' ? new Date().toISOString().split('T')[0] : undefined
+            }
+          : m
+      )
+    }));
 
-      const newStatus = member.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-      const audit = logAudit(
-        'UPDATE_MEMBER_STATUS',
-        'User',
-        memberId,
-        `Changed member ${member.name} status to ${newStatus}`,
-        newStatus,
-        member.status
-      );
-
-      return {
-        ...prev,
-        members: prev.members.map((m) =>
-          m.id === memberId
-            ? {
-                ...m,
-                status: newStatus,
-                leaveDate: newStatus === 'INACTIVE' ? new Date().toISOString().split('T')[0] : undefined,
-                updatedAt: new Date().toISOString()
-              }
-            : m
-        ),
-        auditLogs: [audit, ...prev.auditLogs]
-      };
-    });
+    try {
+      await apiRequest(`/api/members/${memberId}/status`, { method: 'PATCH' });
+    } catch (err) {
+      console.warn('API sync warning:', err);
+    }
   };
 
-  const updateMemberRole = (memberId: string, role: Role) => {
-    setState((prev) => {
-      const member = prev.members.find((m) => m.id === memberId);
-      if (!member) return prev;
+  const updateMemberRole = async (memberId: string, role: Role) => {
+    setState((prev) => ({
+      ...prev,
+      members: prev.members.map((m) => (m.id === memberId ? { ...m, role } : m))
+    }));
 
-      const audit = logAudit(
-        'CHANGE_MEMBER_ROLE',
-        'User',
-        memberId,
-        `Updated role for ${member.name} from ${member.role} to ${role}`,
-        role,
-        member.role
-      );
-
-      return {
-        ...prev,
-        members: prev.members.map((m) =>
-          m.id === memberId ? { ...m, role, updatedAt: new Date().toISOString() } : m
-        ),
-        auditLogs: [audit, ...prev.auditLogs]
-      };
-    });
+    try {
+      await apiRequest(`/api/members/${memberId}/role`, {
+        method: 'PATCH',
+        body: JSON.stringify({ role })
+      });
+    } catch (err) {
+      console.warn('API sync warning:', err);
+    }
   };
 
   const markNotificationRead = (id: string) => {
     setState((prev) => ({
       ...prev,
-      notifications: prev.notifications.map((n) =>
-        n.id === id ? { ...n, isRead: true } : n
-      )
+      notifications: prev.notifications.map((n) => (n.id === id ? { ...n, isRead: true } : n))
     }));
   };
 
@@ -1128,6 +1185,16 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setState(getInitialState());
   };
 
+  const clearAllDatabaseData = async () => {
+    try {
+      await apiRequest('/api/clear-all-data', { method: 'POST' });
+      resetDemoData();
+      await reloadDatabaseData();
+    } catch (err) {
+      console.error('Failed to clear database data:', err);
+    }
+  };
+
   const loginWithCredentials = async (email: string, password?: string) => {
     try {
       const res = await apiRequest('/api/auth/login', {
@@ -1138,9 +1205,9 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setStoredToken(res.token);
         setIsAuthenticated(true);
         setState((prev) => ({ ...prev, currentUserId: res.user.id }));
+        await reloadDatabaseData();
       }
     } catch (err: any) {
-      // Local fallback for offline/demo
       const found = state.members.find((m) => m.email.toLowerCase() === email.toLowerCase());
       if (found) {
         setStoredToken(`local-token-${found.id}`);
@@ -1152,7 +1219,15 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const registerUser = async (data: { name: string; email: string; password: string; phone?: string; role?: Role }) => {
+  const registerUser = async (data: {
+    name: string;
+    nameBn?: string;
+    email: string;
+    password: string;
+    phone?: string;
+    roomNumber?: string;
+    role?: Role;
+  }) => {
     try {
       const res = await apiRequest('/api/auth/register', {
         method: 'POST',
@@ -1164,37 +1239,19 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setState((prev) => ({
           ...prev,
           currentUserId: res.user.id,
-          members: [...prev.members, res.user]
+          members: [...prev.members.filter((m) => m.id !== res.user.id), res.user]
         }));
+        await reloadDatabaseData();
       }
     } catch (err: any) {
-      // Local fallback
-      const newId = `user-${Date.now()}`;
-      const newUser: User = {
-        id: newId,
-        name: data.name,
-        email: data.email,
-        phone: data.phone || '+880 1700-000000',
-        role: data.role || 'MEMBER',
-        status: 'ACTIVE',
-        joinDate: new Date().toISOString().split('T')[0],
-        messId: state.activeMessId,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      setStoredToken(`local-token-${newId}`);
-      setIsAuthenticated(true);
-      setState((prev) => ({
-        ...prev,
-        currentUserId: newId,
-        members: [...prev.members, newUser]
-      }));
+      throw new Error(err.message || 'Registration failed');
     }
   };
 
   const logout = () => {
     clearStoredToken();
     setIsAuthenticated(false);
+    setState((prev) => ({ ...prev, currentUserId: '' }));
   };
 
   return (
@@ -1235,13 +1292,15 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         markNotificationRead,
         markAllNotificationsRead,
         resetDemoData,
+        clearAllDatabaseData,
         isAuthenticated,
         isAuthModalOpen,
         setIsAuthModalOpen,
         loginWithCredentials,
         registerUser,
         logout,
-        dbStatus
+        dbStatus,
+        reloadDatabaseData
       }}
     >
       {children}

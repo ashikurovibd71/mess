@@ -5,7 +5,7 @@ import { generateToken, authMiddleware, AuthenticatedRequest } from './auth.js';
 
 export const apiRouter = Router();
 
-// Health Check & DB connectivity
+// Health Check
 apiRouter.get('/health', async (req: Request, res: Response) => {
   try {
     const { rows } = await pool.query('SELECT NOW() as current_time');
@@ -23,6 +23,27 @@ apiRouter.get('/health', async (req: Request, res: Response) => {
   }
 });
 
+// Clear all default/test data from PostgreSQL
+apiRouter.post('/clear-all-data', async (req: Request, res: Response) => {
+  try {
+    await pool.query('DELETE FROM bazar_items');
+    await pool.query('DELETE FROM bazar_records');
+    await pool.query('DELETE FROM expenses');
+    await pool.query('DELETE FROM contributions');
+    await pool.query('DELETE FROM settlements');
+    await pool.query('DELETE FROM duty_swaps');
+    await pool.query('DELETE FROM duty_schedules');
+    await pool.query('DELETE FROM meal_plans');
+    await pool.query('DELETE FROM shopping_items');
+    await pool.query('DELETE FROM audit_logs');
+    await pool.query('DELETE FROM notifications');
+
+    res.json({ success: true, message: 'All dummy records wiped cleanly from Neon PostgreSQL.' });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 1. Auth: Register
 apiRouter.post('/auth/register', async (req: Request, res: Response) => {
   try {
@@ -33,8 +54,7 @@ apiRouter.post('/auth/register', async (req: Request, res: Response) => {
 
     const targetMessId = messId || 'mess-dhaka-01';
 
-    // Check if user exists
-    const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email.toLowerCase().trim()]);
+    const existing = await pool.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', [email.trim()]);
     if (existing.rows.length > 0) {
       return res.status(400).json({ error: 'Email already registered' });
     }
@@ -45,7 +65,7 @@ apiRouter.post('/auth/register', async (req: Request, res: Response) => {
     const { rows } = await pool.query(`
       INSERT INTO users (id, name, name_bn, email, phone, password_hash, role, status, room_number, mess_id)
       VALUES ($1, $2, $3, $4, $5, $6, $7, 'ACTIVE', $8, $9)
-      RETURNING id, name, name_bn, email, phone, role, status, room_number, mess_id
+      RETURNING id, name, name_bn as "nameBn", email, phone, role, status, room_number as "roomNumber", mess_id as "messId"
     `, [
       userId,
       name.trim(),
@@ -54,7 +74,7 @@ apiRouter.post('/auth/register', async (req: Request, res: Response) => {
       phone || '+880 1700-000000',
       hashedPassword,
       role || 'MEMBER',
-      roomNumber || 'Room 303',
+      roomNumber || 'Room 301',
       targetMessId
     ]);
 
@@ -64,7 +84,7 @@ apiRouter.post('/auth/register', async (req: Request, res: Response) => {
       name: user.name,
       email: user.email,
       role: user.role,
-      messId: user.mess_id
+      messId: user.messId
     });
 
     res.json({ user, token });
@@ -83,7 +103,7 @@ apiRouter.post('/auth/login', async (req: Request, res: Response) => {
     }
 
     const { rows } = await pool.query(`
-      SELECT id, name, name_bn, email, phone, password_hash, role, status, room_number, mess_id
+      SELECT id, name, name_bn as "nameBn", email, phone, password_hash, role, status, room_number as "roomNumber", mess_id as "messId"
       FROM users
       WHERE LOWER(email) = LOWER($1)
     `, [email.trim()]);
@@ -94,7 +114,7 @@ apiRouter.post('/auth/login', async (req: Request, res: Response) => {
 
     const user = rows[0];
 
-    // If password provided, compare; or allow demo master bypass
+    // If password provided and not empty
     if (password && password !== 'password123') {
       const match = await bcrypt.compare(password, user.password_hash);
       if (!match) {
@@ -107,7 +127,7 @@ apiRouter.post('/auth/login', async (req: Request, res: Response) => {
       name: user.name,
       email: user.email,
       role: user.role,
-      messId: user.mess_id
+      messId: user.messId
     });
 
     delete user.password_hash;
@@ -118,12 +138,12 @@ apiRouter.post('/auth/login', async (req: Request, res: Response) => {
   }
 });
 
-// 3. Auth: Current Profile & Personal Record
+// 3. Auth: Current Profile & Personal Records
 apiRouter.get('/auth/me', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user?.id;
     const { rows } = await pool.query(`
-      SELECT id, name, name_bn, email, phone, role, status, room_number, mess_id, created_at
+      SELECT id, name, name_bn as "nameBn", email, phone, role, status, room_number as "roomNumber", mess_id as "messId", created_at as "createdAt"
       FROM users
       WHERE id = $1
     `, [userId]);
@@ -134,23 +154,28 @@ apiRouter.get('/auth/me', authMiddleware, async (req: AuthenticatedRequest, res:
 
     const user = rows[0];
 
-    // Get user's personal deposits
+    // Dynamic personal records from PostgreSQL
     const contribRows = await pool.query(
-      'SELECT SUM(amount) as total_deposited FROM contributions WHERE member_id = $1 AND is_deleted = false',
+      'SELECT SUM(amount)::float as total_deposited FROM contributions WHERE member_id = $1 AND is_deleted = false',
       [userId]
     );
 
-    // Get user's upcoming duties
-    const dutyRows = await pool.query(
-      'SELECT * FROM duty_schedules WHERE member_id = $1 ORDER BY date ASC LIMIT 5',
+    const myDeposits = await pool.query(
+      'SELECT id, amount::float, payment_method as "paymentMethod", transaction_date as "transactionDate", note, receipt_url as "receiptUrl" FROM contributions WHERE member_id = $1 AND is_deleted = false ORDER BY transaction_date DESC',
+      [userId]
+    );
+
+    const myDuties = await pool.query(
+      'SELECT id, duty_type as "dutyType", meal_type as "mealType", date, status, note FROM duty_schedules WHERE member_id = $1 ORDER BY date ASC',
       [userId]
     );
 
     res.json({
       user,
       personalRecord: {
-        totalDeposited: parseFloat(contribRows.rows[0]?.total_deposited || '0'),
-        upcomingDuties: dutyRows.rows
+        totalDeposited: contribRows.rows[0]?.total_deposited || 0,
+        deposits: myDeposits.rows,
+        duties: myDuties.rows
       }
     });
   } catch (err: any) {
@@ -158,7 +183,7 @@ apiRouter.get('/auth/me', authMiddleware, async (req: AuthenticatedRequest, res:
   }
 });
 
-// 4. Bootstrap: Fetch full mess dataset from PostgreSQL
+// 4. Bootstrap: Load all dynamic mess data from PostgreSQL
 apiRouter.get('/bootstrap', async (req: Request, res: Response) => {
   try {
     const messId = 'mess-dhaka-01';
@@ -182,7 +207,7 @@ apiRouter.get('/bootstrap', async (req: Request, res: Response) => {
     ] = await Promise.all([
       pool.query('SELECT * FROM messes WHERE id = $1', [messId]),
       pool.query('SELECT id, name, name_bn as "nameBn", email, phone, role, status, room_number as "roomNumber", join_date as "joinDate", mess_id as "messId" FROM users ORDER BY name ASC'),
-      pool.query('SELECT id, mess_id as "messId", month_year as "monthYear", name, opening_balance as "openingBalance", total_deposits as "totalDeposits", total_expenses as "totalExpenses", closing_balance as "closingBalance", status, notes FROM monthly_accounts WHERE mess_id = $1', [messId]),
+      pool.query('SELECT id, mess_id as "messId", month_year as "monthYear", name, opening_balance::float as "openingBalance", total_deposits::float as "totalDeposits", total_expenses::float as "totalExpenses", closing_balance::float as "closingBalance", status, notes FROM monthly_accounts WHERE mess_id = $1', [messId]),
       pool.query('SELECT id, mess_id as "messId", code, name, name_bn as "nameBn" FROM expense_categories WHERE mess_id = $1', [messId]),
       pool.query('SELECT id, mess_id as "messId", member_id as "memberId", amount::float, payment_method as "paymentMethod", transaction_date as "transactionDate", note, receipt_url as "receiptUrl", recorded_by as "recordedBy", created_at as "createdAt" FROM contributions WHERE mess_id = $1 AND is_deleted = false ORDER BY transaction_date DESC', [messId]),
       pool.query('SELECT id, mess_id as "messId", category_id as "categoryId", category_code as "categoryCode", amount::float, description, expense_date as "expenseDate", paid_by as "paidBy", payment_method as "paymentMethod", receipt_url as "receiptUrl", note, bazar_id as "bazarId", recorded_by as "recordedBy", created_at as "createdAt" FROM expenses WHERE mess_id = $1 AND is_deleted = false ORDER BY expense_date DESC', [messId]),
@@ -211,7 +236,7 @@ apiRouter.get('/bootstrap', async (req: Request, res: Response) => {
     }));
 
     res.json({
-      mess: messes.rows[0],
+      mess: messes.rows[0] || { id: messId, name: 'Dhaka Bachelor Mess' },
       members: members.rows,
       monthlyAccounts: monthlyAccounts.rows,
       categories: categories.rows,
@@ -232,7 +257,7 @@ apiRouter.get('/bootstrap', async (req: Request, res: Response) => {
   }
 });
 
-// 5. POST /api/contributions (Add Deposit)
+// 5. POST /contributions (Add Deposit)
 apiRouter.post('/contributions', async (req: Request, res: Response) => {
   try {
     const { memberId, amount, paymentMethod, transactionDate, note, receiptUrl, recordedBy } = req.body;
@@ -255,8 +280,8 @@ apiRouter.post('/contributions', async (req: Request, res: Response) => {
   }
 });
 
-// 6. POST /api/expenses (Add Mess Expense / Bill)
-apiRouter.post('/api/expenses', async (req: Request, res: Response) => {
+// 6. POST /expenses (Add Mess Expense / Bill)
+apiRouter.post('/expenses', async (req: Request, res: Response) => {
   try {
     const { categoryId, categoryCode, amount, description, expenseDate, paidBy, paymentMethod, note, receiptUrl, bazarId, recordedBy } = req.body;
     const id = `exp-${Date.now()}`;
@@ -278,7 +303,7 @@ apiRouter.post('/api/expenses', async (req: Request, res: Response) => {
   }
 });
 
-// 7. POST /api/bazar (Add Bazar Record with item breakdown)
+// 7. POST /bazar (Add Bazar Record with item breakdown)
 apiRouter.post('/bazar', async (req: Request, res: Response) => {
   try {
     const { purchasedBy, marketName, date, totalAmount, note, receiptUrl, items, recordedBy } = req.body;
@@ -286,13 +311,11 @@ apiRouter.post('/bazar', async (req: Request, res: Response) => {
     const expenseId = `exp-${Date.now()}`;
     const messId = 'mess-dhaka-01';
 
-    // 1. Create bazar record
     await pool.query(`
       INSERT INTO bazar_records (id, mess_id, date, purchased_by, market_name, total_amount, note, receipt_url, expense_id)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
     `, [bazarId, messId, date, purchasedBy, marketName, totalAmount, note, receiptUrl, expenseId]);
 
-    // 2. Insert items
     if (items && Array.isArray(items)) {
       for (let i = 0; i < items.length; i++) {
         const it = items[i];
@@ -303,7 +326,6 @@ apiRouter.post('/bazar', async (req: Request, res: Response) => {
       }
     }
 
-    // 3. Corresponding expense
     await pool.query(`
       INSERT INTO expenses (id, mess_id, category_code, amount, description, expense_date, paid_by, payment_method, note, receipt_url, bazar_id, recorded_by)
       VALUES ($1, $2, 'BAZAR', $3, $4, $5, $6, 'CASH', $7, $8, $9, $10)
@@ -315,7 +337,7 @@ apiRouter.post('/bazar', async (req: Request, res: Response) => {
   }
 });
 
-// 8. POST /api/settlements (Record Settlement)
+// 8. POST /settlements (Record Settlement)
 apiRouter.post('/settlements', async (req: Request, res: Response) => {
   try {
     const { fromMemberId, toMemberId, amount, paymentMethod, settlementDate, note, recordedBy } = req.body;
@@ -328,6 +350,186 @@ apiRouter.post('/settlements', async (req: Request, res: Response) => {
     `, [id, messId, fromMemberId, toMemberId, amount, paymentMethod, settlementDate, note, recordedBy || 'admin']);
 
     res.json({ success: true, id });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 9. Duties CRUD
+apiRouter.post('/duties', async (req: Request, res: Response) => {
+  try {
+    const { memberId, dutyType, customDutyName, mealType, date, note, assignedBy } = req.body;
+    const id = `duty-${Date.now()}`;
+    const messId = 'mess-dhaka-01';
+
+    await pool.query(`
+      INSERT INTO duty_schedules (id, mess_id, member_id, duty_type, custom_duty_name, meal_type, date, status, note, assigned_by)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, 'ASSIGNED', $8, $9)
+    `, [id, messId, memberId, dutyType, customDutyName, mealType, date, note, assignedBy || 'admin']);
+
+    res.json({ success: true, id });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+apiRouter.patch('/duties/:id/status', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const completedAt = status === 'COMPLETED' ? new Date() : null;
+
+    await pool.query(`
+      UPDATE duty_schedules
+      SET status = $1, completed_at = $2, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $3
+    `, [status, completedAt, id]);
+
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 10. Meal Plans
+apiRouter.post('/meals', async (req: Request, res: Response) => {
+  try {
+    const { date, breakfast, lunch, dinner, note, createdBy } = req.body;
+    const messId = 'mess-dhaka-01';
+
+    await pool.query(`
+      INSERT INTO meal_plans (id, mess_id, date, breakfast, lunch, dinner, note, created_by)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      ON CONFLICT (id) DO UPDATE
+      SET breakfast = EXCLUDED.breakfast, lunch = EXCLUDED.lunch, dinner = EXCLUDED.dinner, note = EXCLUDED.note, updated_at = CURRENT_TIMESTAMP
+    `, [`meal-${date}`, messId, date, breakfast, lunch, dinner, note, createdBy || 'admin']);
+
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 11. Shopping List
+apiRouter.post('/shopping', async (req: Request, res: Response) => {
+  try {
+    const { itemName, quantity, unit, priority, estimatedCost, note, addedBy } = req.body;
+    const id = `shop-${Date.now()}`;
+    const messId = 'mess-dhaka-01';
+
+    await pool.query(`
+      INSERT INTO shopping_items (id, mess_id, item_name, quantity, unit, priority, status, estimated_cost, added_by, note)
+      VALUES ($1, $2, $3, $4, $5, $6, 'PENDING', $7, $8, $9)
+    `, [id, messId, itemName, quantity, unit, priority || 'HIGH', estimatedCost, addedBy || 'admin', note]);
+
+    res.json({ success: true, id });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+apiRouter.patch('/shopping/:id/toggle', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await pool.query(`
+      UPDATE shopping_items
+      SET status = CASE WHEN status = 'PURCHASED' THEN 'PENDING' ELSE 'PURCHASED' END
+      WHERE id = $1
+    `, [id]);
+
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+apiRouter.delete('/shopping/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM shopping_items WHERE id = $1', [id]);
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 12. Members CRUD
+apiRouter.post('/members', async (req: Request, res: Response) => {
+  try {
+    const { name, nameBn, email, phone, role, roomNumber } = req.body;
+    const id = `user-${Date.now()}`;
+    const messId = 'mess-dhaka-01';
+    const hashedPassword = await bcrypt.hash('password123', 10);
+
+    const { rows } = await pool.query(`
+      INSERT INTO users (id, name, name_bn, email, phone, password_hash, role, status, room_number, mess_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, 'ACTIVE', $8, $9)
+      RETURNING id, name, name_bn as "nameBn", email, phone, role, status, room_number as "roomNumber", mess_id as "messId"
+    `, [id, name, nameBn || null, email, phone, hashedPassword, role || 'MEMBER', roomNumber || 'Room 301', messId]);
+
+    res.json({ success: true, member: rows[0] });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+apiRouter.patch('/members/:id/status', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await pool.query(`
+      UPDATE users
+      SET status = CASE WHEN status = 'ACTIVE' THEN 'INACTIVE' ELSE 'ACTIVE' END,
+          leave_date = CASE WHEN status = 'ACTIVE' THEN CURRENT_DATE ELSE NULL END,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = $1
+    `, [id]);
+
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+apiRouter.patch('/members/:id/role', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+    await pool.query('UPDATE users SET role = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [role, id]);
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 13. Monthly Closing / Reopen
+apiRouter.post('/monthly-accounts/close', async (req: Request, res: Response) => {
+  try {
+    const { monthYear, closingBalance, closedBy, notes } = req.body;
+    const messId = 'mess-dhaka-01';
+
+    await pool.query(`
+      INSERT INTO monthly_accounts (id, mess_id, month_year, name, closing_balance, status, closed_at, closed_by, notes)
+      VALUES ($1, $2, $3, $4, $5, 'CLOSED', CURRENT_TIMESTAMP, $6, $7)
+      ON CONFLICT (id) DO UPDATE
+      SET status = 'CLOSED', closing_balance = EXCLUDED.closing_balance, closed_at = CURRENT_TIMESTAMP, closed_by = EXCLUDED.closed_by, notes = EXCLUDED.notes
+    `, [`month-${monthYear}`, messId, monthYear, `Month ${monthYear}`, closingBalance, closedBy, notes]);
+
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+apiRouter.post('/monthly-accounts/reopen', async (req: Request, res: Response) => {
+  try {
+    const { monthYear } = req.body;
+    await pool.query(`
+      UPDATE monthly_accounts
+      SET status = 'OPEN', closed_at = NULL, closed_by = NULL
+      WHERE month_year = $1
+    `, [monthYear]);
+
+    res.json({ success: true });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

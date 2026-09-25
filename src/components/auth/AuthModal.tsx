@@ -118,44 +118,30 @@ export const AuthModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
         {mode === 'LOGIN' ? (
           <div className="p-6 space-y-4">
-            {/* Quick 1-Click Login for Mess Members */}
+            {/* Quick 1-Click Login for Mess Members from Neon PostgreSQL */}
             <div>
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-2">
-                1-Click Quick Member Login:
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleLogin('ashikurovi2003@gmail.com', 'password123')}
-                  className="px-2.5 py-1.5 text-left rounded-lg border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all text-xs"
-                >
-                  <div className="font-bold text-slate-900">Ovi (Admin)</div>
-                  <div className="text-[10px] text-slate-500">ashikurovi2003@gmail.com</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleLogin('rahim.mess@gmail.com', 'password123')}
-                  className="px-2.5 py-1.5 text-left rounded-lg border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all text-xs"
-                >
-                  <div className="font-bold text-slate-900">Rahim (Cashier)</div>
-                  <div className="text-[10px] text-slate-500">rahim.mess@gmail.com</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleLogin('karim.mess@gmail.com', 'password123')}
-                  className="px-2.5 py-1.5 text-left rounded-lg border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all text-xs"
-                >
-                  <div className="font-bold text-slate-900">Karim (Member)</div>
-                  <div className="text-[10px] text-slate-500">karim.mess@gmail.com</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleLogin('hasan.mess@gmail.com', 'password123')}
-                  className="px-2.5 py-1.5 text-left rounded-lg border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all text-xs"
-                >
-                  <div className="font-bold text-slate-900">Hasan (Member)</div>
-                  <div className="text-[10px] text-slate-500">hasan.mess@gmail.com</div>
-                </button>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                  1-Click Quick Member Login:
+                </label>
+                <span className="text-[10px] text-slate-400">
+                  {state.members.length} from Neon DB
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                {state.members.map((member) => (
+                  <button
+                    key={member.id}
+                    type="button"
+                    onClick={() => handleLogin(member.email, 'password123')}
+                    className="px-2.5 py-1.5 text-left rounded-lg border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all text-xs"
+                  >
+                    <div className="font-bold text-slate-900 truncate">
+                      {member.name} ({member.role})
+                    </div>
+                    <div className="text-[10px] text-slate-500 truncate">{member.email}</div>
+                  </button>
+                ))}
               </div>
             </div>
 

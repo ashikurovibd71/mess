@@ -35,6 +35,7 @@ import { AddBazarModal } from '../modals/AddBazarModal';
 import { AddExpenseModal } from '../modals/AddExpenseModal';
 import { RecordSettlementModal } from '../modals/RecordSettlementModal';
 import { SettlementSuggestion } from '../../types';
+import { MyPersonalRecordsCard } from './MyPersonalRecordsCard';
 
 const CATEGORY_COLORS = [
   '#059669', // Bazar (Emerald)
@@ -94,6 +95,10 @@ export const CombinedDashboard: React.FC<{ onNavigate: (tab: any) => void }> = (
     (s) => s.fromMemberId === currentUser.id || s.toMemberId === currentUser.id
   );
 
+  // Bazar total from category breakdown
+  const bazarCategory = financialOverview.categoryBreakdown.find((c) => c.code === 'BAZAR');
+  const bazarTotal = bazarCategory?.amount || 0;
+
   // Member balance chart data
   const balanceChartData = financialOverview.memberSummaries.map((m) => ({
     name: m.memberName,
@@ -102,19 +107,22 @@ export const CombinedDashboard: React.FC<{ onNavigate: (tab: any) => void }> = (
 
   return (
     <div className="space-y-6">
-      {/* Welcome & Financial Banner */}
+      {/* 1. Logged-in User Personal Records Card */}
+      <MyPersonalRecordsCard />
+
+      {/* 2. Whole Mess Financial & Operations Overview */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-2xs">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-bold tracking-tight text-slate-900">
-              Welcome back, {currentUser.name}
+              Mess Financial Overview & Roster
             </h1>
             <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-              {currentRole}
+              {state.mess?.name || 'Dhaka Bachelor Mess'}
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Dhaka Bachelor Mess · September 2026 Financial & Daily Management Overview
+            Accounting, Expense Splitting & Collective Drawer Balances for {financialOverview.monthName}
           </p>
         </div>
 
@@ -157,7 +165,7 @@ export const CombinedDashboard: React.FC<{ onNavigate: (tab: any) => void }> = (
             ৳{cashBalance.toLocaleString('en-IN')}
           </div>
           <div className="mt-1 text-[11px] text-slate-500">
-            Available liquid cash fund in mess drawer
+            Available liquid cash fund in drawer
           </div>
         </div>
 
@@ -175,7 +183,7 @@ export const CombinedDashboard: React.FC<{ onNavigate: (tab: any) => void }> = (
             ৳{financialOverview.totalExpenses.toLocaleString('en-IN')}
           </div>
           <div className="mt-1 text-[11px] text-slate-500">
-            Bazar (৳12,000) + Bills & Other (৳8,000)
+            Bazar (৳{bazarTotal.toLocaleString('en-IN')}) + Bills (৳{(financialOverview.totalExpenses - bazarTotal).toLocaleString('en-IN')})
           </div>
         </div>
 
@@ -193,7 +201,7 @@ export const CombinedDashboard: React.FC<{ onNavigate: (tab: any) => void }> = (
             ৳{financialOverview.perMemberShare.toLocaleString('en-IN')}
           </div>
           <div className="mt-1 text-[11px] text-slate-500">
-            ৳{financialOverview.totalExpenses} ÷ {financialOverview.activeMemberCount} active members
+            ৳{financialOverview.totalExpenses} ÷ {financialOverview.activeMemberCount || 1} active members
           </div>
         </div>
 
@@ -211,90 +219,9 @@ export const CombinedDashboard: React.FC<{ onNavigate: (tab: any) => void }> = (
             ৳{financialOverview.totalDeposits.toLocaleString('en-IN')}
           </div>
           <div className="mt-1 text-[11px] text-slate-500">
-            Collected from 5 members this month
+            From {state.contributions.length} recorded deposits
           </div>
         </div>
-      </div>
-
-      {/* Member Personal Financial Status Card (Section 17) */}
-      <div className="bg-slate-900 text-white p-5 rounded-xl shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-              Personal Account · {currentUser.name} ({currentUser.role})
-            </div>
-            <div className="flex items-baseline gap-3">
-              <span className="text-3xl font-extrabold tabular-nums tracking-tight">
-                {formatTaka(mySummary.netBalance, true)}
-              </span>
-              <span
-                className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                  mySummary.netBalance > 0.01
-                    ? 'bg-emerald-500/20 text-emerald-300'
-                    : mySummary.netBalance < -0.01
-                    ? 'bg-amber-500/20 text-amber-300'
-                    : 'bg-slate-700 text-slate-300'
-                }`}
-              >
-                {mySummary.netBalance > 0.01
-                  ? 'YOU SHOULD RECEIVE (পাওনাদার)'
-                  : mySummary.netBalance < -0.01
-                  ? 'YOU NEED TO PAY (দেনা রয়েছে)'
-                  : 'ALL SETTLED (পরিশোধিত)'}
-              </span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-6 text-xs border-t md:border-t-0 md:border-l border-slate-800 pt-3 md:pt-0 md:pl-6">
-            <div>
-              <div className="text-slate-400">My Share (খরচ অংশ)</div>
-              <div className="text-base font-bold text-white tabular-nums mt-0.5">
-                ৳{mySummary.share.toLocaleString('en-IN')}
-              </div>
-            </div>
-            <div>
-              <div className="text-slate-400">I Have Paid (জমা)</div>
-              <div className="text-base font-bold text-white tabular-nums mt-0.5">
-                ৳{mySummary.totalDeposited.toLocaleString('en-IN')}
-              </div>
-            </div>
-            <div>
-              <div className="text-slate-400">Net Due (ব্যালেন্স)</div>
-              <div
-                className={`text-base font-bold tabular-nums mt-0.5 ${
-                  mySummary.netBalance >= 0 ? 'text-emerald-400' : 'text-amber-400'
-                }`}
-              >
-                {formatTaka(mySummary.netBalance, true)}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Member Settlement Recommendation Action */}
-        {mySuggestions.length > 0 && (
-          <div className="mt-4 pt-3 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2 text-slate-300">
-              <ArrowRight className="w-4 h-4 text-indigo-400 shrink-0" />
-              <span>
-                Recommended Settlement Action:{' '}
-                <strong className="text-white font-semibold">
-                  {mySuggestions[0].fromMemberName} → {mySuggestions[0].toMemberName} (৳
-                  {mySuggestions[0].amount.toLocaleString('en-IN')})
-                </strong>
-              </span>
-            </div>
-            <button
-              onClick={() => {
-                setSelectedSuggestion(mySuggestions[0]);
-                setIsSettlementOpen(true);
-              }}
-              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium transition-colors whitespace-nowrap self-start sm:self-auto"
-            >
-              Record This Settlement
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Two Column Layout: Today's Daily Management & Finance Charts */}
