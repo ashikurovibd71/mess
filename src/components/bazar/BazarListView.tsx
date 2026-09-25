@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useMess } from '../../context/MessContext';
-import { ShoppingCart, Plus, ChevronDown, ChevronUp, Receipt, ExternalLink, Calendar, MapPin, User as UserIcon } from 'lucide-react';
+import { ShoppingCart, Plus, ChevronDown, ChevronUp, Receipt, Calendar, MapPin, User as UserIcon, FileText } from 'lucide-react';
 import { AddBazarModal } from '../modals/AddBazarModal';
-import { ReceiptPreviewModal } from '../modals/ReceiptPreviewModal';
+import { UniversalSlipInvoiceModal, SlipInvoiceData } from '../modals/UniversalSlipInvoiceModal';
 import { BazarRecord } from '../../types';
 
 export const BazarListView: React.FC = () => {
@@ -10,12 +10,35 @@ export const BazarListView: React.FC = () => {
 
   const [isAddBazarOpen, setIsAddBazarOpen] = useState(false);
   const [expandedBazarId, setExpandedBazarId] = useState<string | null>(state.bazarRecords[0]?.id || null);
-  const [receiptPreview, setReceiptPreview] = useState<{ title: string; url?: string; amount?: number; date?: string } | null>(null);
+  const [selectedSlip, setSelectedSlip] = useState<SlipInvoiceData | null>(null);
 
   const totalBazarSpent = state.bazarRecords.reduce((sum, b) => sum + b.totalAmount, 0);
 
   const toggleExpand = (id: string) => {
     setExpandedBazarId(expandedBazarId === id ? null : id);
+  };
+
+  const openSlipForRecord = (record: BazarRecord) => {
+    const purchaser = membersMap.get(record.purchasedBy);
+    setSelectedSlip({
+      type: 'BAZAR',
+      id: record.id,
+      title: `Bazar at ${record.marketName}`,
+      titleBn: 'বাজার খরচের মেমো',
+      date: record.date,
+      amount: record.totalAmount,
+      payerName: purchaser?.name || 'Member',
+      payerRole: purchaser?.role || 'MEMBER',
+      note: record.note,
+      receiptUrl: record.receiptUrl,
+      items: record.items?.map((it) => ({
+        itemName: it.itemName,
+        quantity: it.quantity,
+        unit: it.unit,
+        unitPrice: it.unitPrice,
+        totalPrice: it.totalPrice
+      }))
+    });
   };
 
   return (
@@ -24,16 +47,16 @@ export const BazarListView: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-2xs">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-slate-900">
-            Bazar Records & Itemized Expenses
+            Bazar Records
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Section 8 · Detailed market purchases, auto-calculated line items (quantity × unit price = total)
+            Market purchases & itemized slips
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <div className="text-right hidden sm:block">
-            <div className="text-[11px] font-semibold text-slate-500 uppercase">Total Bazar Spent</div>
+            <div className="text-[11px] font-semibold text-slate-500 uppercase">Total Spent</div>
             <div className="text-base font-bold text-slate-900 tabular-nums">
               ৳{totalBazarSpent.toLocaleString('en-IN')}
             </div>
@@ -43,7 +66,7 @@ export const BazarListView: React.FC = () => {
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors shadow-xs"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Record New Bazar</span>
+            <span>+ New Bazar</span>
           </button>
         </div>
       </div>
@@ -99,12 +122,23 @@ export const BazarListView: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openSlipForRecord(record);
+                    }}
+                    className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg font-semibold text-[11px] transition-colors inline-flex items-center gap-1.5 shadow-2xs"
+                  >
+                    <Receipt className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Memo / Slip</span>
+                  </button>
+
                   <div className="text-right">
                     <div className="text-base sm:text-lg font-bold text-slate-900 tabular-nums">
                       ৳{record.totalAmount.toLocaleString('en-IN')}
                     </div>
-                    <div className="text-[11px] text-emerald-700 font-medium">Bazar Fund Debited</div>
+                    <div className="text-[11px] text-emerald-700 font-medium">Bazar Debited</div>
                   </div>
 
                   <button className="text-slate-400 p-1">
@@ -113,31 +147,24 @@ export const BazarListView: React.FC = () => {
                 </div>
               </div>
 
-              {/* Itemized Table Breakdown (Section 8) */}
+              {/* Itemized Table Breakdown */}
               {isExpanded && (
                 <div className="border-t border-slate-100 bg-slate-50/40 p-4 sm:p-5">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">
-                      Itemized Breakdown (বাজারের বিস্তারিত হিসাব)
+                      Purchased Items ({record.items?.length || 0})
                     </span>
 
-                    {record.receiptUrl && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setReceiptPreview({
-                            title: `Bazar Receipt - ${record.marketName}`,
-                            url: record.receiptUrl,
-                            amount: record.totalAmount,
-                            date: record.date
-                          });
-                        }}
-                        className="flex items-center gap-1 text-xs text-indigo-700 font-semibold hover:underline"
-                      >
-                        <Receipt className="w-3.5 h-3.5" />
-                        <span>View Attached Receipt</span>
-                      </button>
-                    )}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openSlipForRecord(record);
+                      }}
+                      className="flex items-center gap-1 text-xs text-indigo-700 font-semibold hover:underline"
+                    >
+                      <Receipt className="w-3.5 h-3.5" />
+                      <span>Print Bazar Memo & Invoice</span>
+                    </button>
                   </div>
 
                   <div className="overflow-x-auto bg-white rounded-lg border border-slate-200">
@@ -188,13 +215,10 @@ export const BazarListView: React.FC = () => {
       </div>
 
       <AddBazarModal isOpen={isAddBazarOpen} onClose={() => setIsAddBazarOpen(false)} />
-      <ReceiptPreviewModal
-        isOpen={!!receiptPreview}
-        onClose={() => setReceiptPreview(null)}
-        title={receiptPreview?.title || ''}
-        receiptUrl={receiptPreview?.url}
-        amount={receiptPreview?.amount}
-        date={receiptPreview?.date}
+      <UniversalSlipInvoiceModal
+        isOpen={!!selectedSlip}
+        onClose={() => setSelectedSlip(null)}
+        data={selectedSlip}
       />
     </div>
   );

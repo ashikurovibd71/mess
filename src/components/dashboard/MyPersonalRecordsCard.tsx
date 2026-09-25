@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { RecordSettlementModal } from '../modals/RecordSettlementModal';
 import { RequestDutySwapModal } from '../modals/RequestDutySwapModal';
-import { ReceiptPreviewModal } from '../modals/ReceiptPreviewModal';
+import { UniversalSlipInvoiceModal, SlipInvoiceData } from '../modals/UniversalSlipInvoiceModal';
 import { DutySchedule, SettlementSuggestion } from '../../types';
 
 export const MyPersonalRecordsCard: React.FC = () => {
@@ -41,13 +41,7 @@ export const MyPersonalRecordsCard: React.FC = () => {
   const [selectedSuggestion, setSelectedSuggestion] = useState<SettlementSuggestion | null>(null);
 
   const [swapDuty, setSwapDuty] = useState<DutySchedule | null>(null);
-  const [previewReceipt, setPreviewReceipt] = useState<{
-    isOpen: boolean;
-    title: string;
-    receiptUrl?: string;
-    amount?: number;
-    date?: string;
-  }>({ isOpen: false, title: '' });
+  const [selectedSlip, setSelectedSlip] = useState<SlipInvoiceData | null>(null);
 
   // 1. Current user financial summary
   const mySummary = financialOverview.memberSummaries.find(
@@ -130,13 +124,37 @@ export const MyPersonalRecordsCard: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-start md:self-center">
+          <div className="flex items-center gap-2 self-start md:self-center flex-wrap">
+            <button
+              onClick={() => {
+                setSelectedSlip({
+                  type: 'MEMBER_STATEMENT',
+                  id: currentUser.id,
+                  title: `Monthly Statement - ${currentUser.name}`,
+                  titleBn: 'মেম্বার মাসিক হিসাব স্টেটমেন্ট ও ইনভয়েস',
+                  date: new Date().toISOString().split('T')[0],
+                  amount: Math.abs(mySummary.netBalance),
+                  payerName: currentUser.name,
+                  payerRole: currentUser.role,
+                  note: `Total Deposited: ৳${mySummary.totalDeposited}, Share: ৳${mySummary.share}, Net Balance: ${mySummary.netBalance >= 0 ? '+' : ''}৳${mySummary.netBalance}`,
+                  items: [
+                    { itemName: 'Total Mess Fund Advance Deposited', quantity: 1, unit: 'sum', unitPrice: mySummary.totalDeposited, totalPrice: mySummary.totalDeposited },
+                    { itemName: 'My Equal Share of Collective Mess Expenses', quantity: 1, unit: 'share', unitPrice: mySummary.share, totalPrice: mySummary.share }
+                  ]
+                });
+              }}
+              className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-xs"
+            >
+              <Receipt className="w-3.5 h-3.5" />
+              <span>Invoice / Slip</span>
+            </button>
+
             <button
               onClick={() => setIsAuthModalOpen(true)}
               className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition-colors flex items-center gap-1.5 border border-slate-700"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span>Switch User</span>
+              <span>Switch</span>
             </button>
             <button
               onClick={logout}
@@ -153,7 +171,7 @@ export const MyPersonalRecordsCard: React.FC = () => {
           {/* Net Balance Status */}
           <div className="bg-slate-800/70 backdrop-blur-xs p-4 rounded-xl border border-slate-700">
             <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-              My Net Balance (ব্যালেন্স)
+              Net Balance
             </div>
             <div
               className={`text-2xl font-black tabular-nums mt-1 ${
@@ -168,11 +186,11 @@ export const MyPersonalRecordsCard: React.FC = () => {
             </div>
             <div className="mt-1 text-[11px] font-semibold">
               {mySummary.netBalance > 0.01 ? (
-                <span className="text-emerald-300">মেস থেকে পাবেন (Receivable)</span>
+                <span className="text-emerald-300">Receivable</span>
               ) : mySummary.netBalance < -0.01 ? (
-                <span className="text-rose-300">মেসে পরিশোধ করতে হবে (Payable)</span>
+                <span className="text-rose-300">Payable</span>
               ) : (
-                <span className="text-slate-400">হিসাব পরিশোধিত (Settled)</span>
+                <span className="text-slate-400">Settled</span>
               )}
             </div>
           </div>
@@ -180,50 +198,50 @@ export const MyPersonalRecordsCard: React.FC = () => {
           {/* Total Deposited */}
           <div className="bg-slate-800/70 backdrop-blur-xs p-4 rounded-xl border border-slate-700">
             <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-              Total I Deposited (আমার জমা)
+              Total Deposited
             </div>
             <div className="text-2xl font-black text-white tabular-nums mt-1">
               ৳{mySummary.totalDeposited.toLocaleString('en-IN')}
             </div>
             <div className="mt-1 text-[11px] text-slate-400">
-              {myContributions.length} deposit records this month
+              {myContributions.length} records
             </div>
           </div>
 
           {/* Expense Share */}
           <div className="bg-slate-800/70 backdrop-blur-xs p-4 rounded-xl border border-slate-700">
             <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-              My Monthly Share (খরচের ভাগ)
+              My Share
             </div>
             <div className="text-2xl font-black text-white tabular-nums mt-1">
               ৳{mySummary.share.toLocaleString('en-IN')}
             </div>
             <div className="mt-1 text-[11px] text-slate-400">
-              Equal share: Total ÷ {financialOverview.activeMemberCount || 1} members
+              Equal cost split
             </div>
           </div>
 
           {/* Total Bazar Purchased by Me */}
           <div className="bg-slate-800/70 backdrop-blur-xs p-4 rounded-xl border border-slate-700">
             <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-              My Bazar Purchases (আমার বাজার)
+              Bazar Spent
             </div>
             <div className="text-2xl font-black text-emerald-400 tabular-nums mt-1">
               ৳{myTotalBazarSpent.toLocaleString('en-IN')}
             </div>
             <div className="mt-1 text-[11px] text-slate-400">
-              {myBazarRecords.length} bazar trips made
+              {myBazarRecords.length} trips
             </div>
           </div>
         </div>
 
         {/* Settlement Suggestions specifically for this User */}
         {(mySettlementsToPay.length > 0 || mySettlementsToReceive.length > 0) && (
-          <div className="mt-4 p-3.5 bg-indigo-950/60 border border-indigo-800/60 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="mt-4 p-3 bg-indigo-950/60 border border-indigo-800/60 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2.5">
               <ArrowRightLeft className="w-4 h-4 text-indigo-400 shrink-0" />
               <div>
-                <span className="text-indigo-200 font-medium">Automatic Settlement: </span>
+                <span className="text-indigo-200 font-medium">Settlement: </span>
                 {mySettlementsToPay.length > 0 ? (
                   <span className="text-white font-bold">
                     You owe {mySettlementsToPay[0].toMemberName} ৳{mySettlementsToPay[0].amount.toLocaleString('en-IN')}
@@ -243,7 +261,7 @@ export const MyPersonalRecordsCard: React.FC = () => {
                 }}
                 className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold transition-colors whitespace-nowrap self-start sm:self-auto shadow-xs"
               >
-                Record Payment (পরিশোধ করুন)
+                Settle Payment
               </button>
             )}
           </div>
@@ -261,7 +279,7 @@ export const MyPersonalRecordsCard: React.FC = () => {
           }`}
         >
           <Sparkles className="w-3.5 h-3.5" />
-          <span>My Overview</span>
+          <span>Overview</span>
         </button>
 
         <button
@@ -273,7 +291,7 @@ export const MyPersonalRecordsCard: React.FC = () => {
           }`}
         >
           <PiggyBank className="w-3.5 h-3.5" />
-          <span>My Deposits ({myContributions.length})</span>
+          <span>Deposits ({myContributions.length})</span>
         </button>
 
         <button
@@ -285,7 +303,7 @@ export const MyPersonalRecordsCard: React.FC = () => {
           }`}
         >
           <ShoppingCart className="w-3.5 h-3.5" />
-          <span>My Bazar Trips ({myBazarRecords.length})</span>
+          <span>Bazar ({myBazarRecords.length})</span>
         </button>
 
         <button
@@ -297,7 +315,7 @@ export const MyPersonalRecordsCard: React.FC = () => {
           }`}
         >
           <CalendarCheck className="w-3.5 h-3.5" />
-          <span>My Duties ({myDuties.length})</span>
+          <span>Duties ({myDuties.length})</span>
         </button>
       </div>
 
@@ -310,12 +328,12 @@ export const MyPersonalRecordsCard: React.FC = () => {
             <div className="space-y-3">
               <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                 <CalendarCheck className="w-4 h-4 text-slate-700" />
-                <span>My Assigned Duties (আমার দায়িত্ব)</span>
+                <span>My Duties</span>
               </h3>
 
               {myDuties.length === 0 ? (
                 <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-500 text-center">
-                  No duties scheduled yet. Click Daily Duties to auto-generate the roster!
+                  No scheduled duties.
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -375,12 +393,12 @@ export const MyPersonalRecordsCard: React.FC = () => {
             <div className="space-y-3">
               <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                 <PiggyBank className="w-4 h-4 text-slate-700" />
-                <span>My Recent Deposits (আমার সাম্প্রতিক জমা)</span>
+                <span>Recent Deposits</span>
               </h3>
 
               {myContributions.length === 0 ? (
                 <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-500 text-center">
-                  No deposits recorded yet. Record deposits from the Deposits tab!
+                  No deposits recorded yet.
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -398,23 +416,28 @@ export const MyPersonalRecordsCard: React.FC = () => {
                         </div>
                       </div>
 
-                      {c.receiptUrl && (
-                        <button
-                          onClick={() =>
-                            setPreviewReceipt({
-                              isOpen: true,
-                              title: `Deposit Receipt - ৳${c.amount}`,
-                              receiptUrl: c.receiptUrl,
-                              amount: c.amount,
-                              date: c.transactionDate
-                            })
-                          }
-                          className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                          title="View Receipt"
-                        >
-                          <Receipt className="w-4 h-4" />
-                        </button>
-                      )}
+                      <button
+                        onClick={() =>
+                          setSelectedSlip({
+                            type: 'DEPOSIT',
+                            id: c.id,
+                            title: `Deposit - ৳${c.amount}`,
+                            titleBn: 'মেস তহবিল জমা রসিদ',
+                            date: c.transactionDate,
+                            amount: c.amount,
+                            paymentMethod: c.paymentMethod,
+                            payerName: currentUser.name,
+                            payerRole: currentUser.role,
+                            note: c.note,
+                            receiptUrl: c.receiptUrl
+                          })
+                        }
+                        className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded font-semibold text-[11px] transition-colors inline-flex items-center gap-1"
+                        title="View Receipt Slip"
+                      >
+                        <Receipt className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Slip</span>
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -428,16 +451,16 @@ export const MyPersonalRecordsCard: React.FC = () => {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-700">
-                All Deposits Made by {currentUser.name} ({myContributions.length} records)
+                Deposits ({myContributions.length})
               </span>
-              <span className="text-xs font-black text-slate-900">
-                Total Deposited: ৳{mySummary.totalDeposited.toLocaleString('en-IN')}
+              <span className="text-xs font-bold text-slate-900">
+                Total: ৳{mySummary.totalDeposited.toLocaleString('en-IN')}
               </span>
             </div>
 
             {myContributions.length === 0 ? (
               <div className="p-8 text-center text-xs text-slate-400 bg-slate-50 rounded-xl border border-slate-200">
-                No deposit records found for this member.
+                No deposit records found.
               </div>
             ) : (
               <div className="overflow-x-auto border border-slate-200 rounded-xl">
@@ -448,7 +471,7 @@ export const MyPersonalRecordsCard: React.FC = () => {
                       <th className="py-2.5 px-3">Amount</th>
                       <th className="py-2.5 px-3">Method</th>
                       <th className="py-2.5 px-3">Note</th>
-                      <th className="py-2.5 px-3 text-right">Receipt</th>
+                      <th className="py-2.5 px-3 text-right">Slip / Receipt</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -465,24 +488,27 @@ export const MyPersonalRecordsCard: React.FC = () => {
                         </td>
                         <td className="py-2.5 px-3 text-slate-500">{c.note || '-'}</td>
                         <td className="py-2.5 px-3 text-right">
-                          {c.receiptUrl ? (
-                            <button
-                              onClick={() =>
-                                setPreviewReceipt({
-                                  isOpen: true,
-                                  title: `Receipt - ৳${c.amount}`,
-                                  receiptUrl: c.receiptUrl,
-                                  amount: c.amount,
-                                  date: c.transactionDate
-                                })
-                              }
-                              className="text-indigo-600 hover:underline font-semibold"
-                            >
-                              View
-                            </button>
-                          ) : (
-                            <span className="text-slate-400">None</span>
-                          )}
+                          <button
+                            onClick={() =>
+                              setSelectedSlip({
+                                type: 'DEPOSIT',
+                                id: c.id,
+                                title: `Deposit - ৳${c.amount}`,
+                                titleBn: 'মেস তহবিল জমা রসিদ',
+                                date: c.transactionDate,
+                                amount: c.amount,
+                                paymentMethod: c.paymentMethod,
+                                payerName: currentUser.name,
+                                payerRole: currentUser.role,
+                                note: c.note,
+                                receiptUrl: c.receiptUrl
+                              })
+                            }
+                            className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded font-semibold text-[11px] transition-colors inline-flex items-center gap-1"
+                          >
+                            <Receipt className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Slip</span>
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -498,16 +524,16 @@ export const MyPersonalRecordsCard: React.FC = () => {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-700">
-                Bazar Purchased by {currentUser.name} ({myBazarRecords.length} trips)
+                Bazar Trips ({myBazarRecords.length})
               </span>
-              <span className="text-xs font-black text-emerald-700">
-                Total Spent on Bazar: ৳{myTotalBazarSpent.toLocaleString('en-IN')}
+              <span className="text-xs font-bold text-emerald-700">
+                Total: ৳{myTotalBazarSpent.toLocaleString('en-IN')}
               </span>
             </div>
 
             {myBazarRecords.length === 0 ? (
               <div className="p-8 text-center text-xs text-slate-400 bg-slate-50 rounded-xl border border-slate-200">
-                No bazar records logged for this member yet.
+                No bazar records logged yet.
               </div>
             ) : (
               <div className="space-y-3">
@@ -522,38 +548,46 @@ export const MyPersonalRecordsCard: React.FC = () => {
                           {b.marketName}
                         </div>
                         <div className="text-xs text-slate-500">
-                          Date: {b.date} {b.note ? `· ${b.note}` : ''}
+                          {b.date} {b.note ? `· ${b.note}` : ''}
                         </div>
                       </div>
                       <div className="text-right">
                         <div className="text-base font-black text-slate-900">
                           ৳{Number(b.totalAmount).toLocaleString('en-IN')}
                         </div>
-                        {b.receiptUrl && (
-                          <button
-                            onClick={() =>
-                              setPreviewReceipt({
-                                isOpen: true,
-                                title: `Bazar Receipt - ${b.marketName}`,
-                                receiptUrl: b.receiptUrl,
-                                amount: Number(b.totalAmount),
-                                date: b.date
-                              })
-                            }
-                            className="text-xs text-indigo-600 hover:underline font-semibold"
-                          >
-                            View Receipt
-                          </button>
-                        )}
+                        <button
+                          onClick={() =>
+                            setSelectedSlip({
+                              type: 'BAZAR',
+                              id: b.id,
+                              title: `Bazar - ${b.marketName}`,
+                              titleBn: 'বাজার মেমো ও ইনভয়েস',
+                              date: b.date,
+                              amount: Number(b.totalAmount),
+                              payerName: currentUser.name,
+                              payerRole: currentUser.role,
+                              note: b.note,
+                              receiptUrl: b.receiptUrl,
+                              items: b.items?.map((it) => ({
+                                itemName: it.itemName,
+                                quantity: it.quantity,
+                                unit: it.unit,
+                                unitPrice: it.unitPrice,
+                                totalPrice: it.totalPrice
+                              }))
+                            })
+                          }
+                          className="text-xs text-indigo-600 hover:underline font-semibold inline-flex items-center gap-1 mt-0.5"
+                        >
+                          <Receipt className="w-3.5 h-3.5" />
+                          <span>Memo / Slip</span>
+                        </button>
                       </div>
                     </div>
 
                     {/* Item breakdown */}
                     {b.items && b.items.length > 0 && (
                       <div className="border-t border-slate-200 pt-2 text-xs">
-                        <div className="font-semibold text-slate-600 mb-1.5">
-                          Purchased Items:
-                        </div>
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                           {b.items.map((it, idx) => (
                             <div
@@ -581,7 +615,7 @@ export const MyPersonalRecordsCard: React.FC = () => {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-700">
-                Scheduled Duties for {currentUser.name}
+                Scheduled Duties
               </span>
               <span className="text-xs text-slate-500">
                 Completed: {myDuties.filter((d) => d.status === 'COMPLETED').length} / {myDuties.length}
@@ -590,7 +624,7 @@ export const MyPersonalRecordsCard: React.FC = () => {
 
             {myDuties.length === 0 ? (
               <div className="p-8 text-center text-xs text-slate-400 bg-slate-50 rounded-xl border border-slate-200">
-                No duties assigned to you currently.
+                No duties assigned currently.
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -666,13 +700,10 @@ export const MyPersonalRecordsCard: React.FC = () => {
         />
       )}
 
-      <ReceiptPreviewModal
-        isOpen={previewReceipt.isOpen}
-        onClose={() => setPreviewReceipt({ ...previewReceipt, isOpen: false })}
-        title={previewReceipt.title}
-        receiptUrl={previewReceipt.receiptUrl}
-        amount={previewReceipt.amount}
-        date={previewReceipt.date}
+      <UniversalSlipInvoiceModal
+        isOpen={!!selectedSlip}
+        onClose={() => setSelectedSlip(null)}
+        data={selectedSlip}
       />
     </div>
   );

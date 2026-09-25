@@ -47,7 +47,7 @@ export const RequestDutySwapModal: React.FC<Props> = ({ isOpen, onClose, duty })
             </div>
             <div>
               <h3 className="text-base font-semibold text-slate-900">Request Duty Swap</h3>
-              <p className="text-xs text-slate-500">ডিউটি অদল-বদল অনুরোধ · Section 42</p>
+              <p className="text-xs text-slate-500">Switch shift with a roommate</p>
             </div>
           </div>
           <button
@@ -69,7 +69,7 @@ export const RequestDutySwapModal: React.FC<Props> = ({ isOpen, onClose, duty })
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1.5">
-              Swap With (কার সাথে পরিবর্তন করবেন)
+              Swap With
             </label>
             <select
               value={targetMemberId}

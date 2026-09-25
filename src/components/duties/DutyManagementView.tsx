@@ -74,10 +74,10 @@ export const DutyManagementView: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-2xs">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-slate-900">
-            Daily Mess Duty Roster & Schedule
+            Duty Roster
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Section 36–46 · Automated fair rotation for Bazar, Cooking & Cleaning duties
+            Cooking, bazar, and cleaning shift rotation
           </p>
         </div>
 
@@ -87,7 +87,7 @@ export const DutyManagementView: React.FC = () => {
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors shadow-xs"
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            <span>Auto-Generate Roster</span>
+            <span>Auto-Generate</span>
           </button>
           <button
             onClick={() => setShowManualForm(!showManualForm)}
@@ -244,15 +244,15 @@ export const DutyManagementView: React.FC = () => {
         </div>
       )}
 
-      {/* Fair Duty Distribution Statistics Table (Section 41) */}
+      {/* Duty Distribution Statistics Table */}
       <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-2xs">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-sm font-bold text-slate-900">
-              Fair Duty Distribution Statistics (সুষম বণ্টন হিসাব)
+              Duty Summary
             </h2>
             <p className="text-xs text-slate-500">
-              Tracks completed shifts per member to guarantee transparent and equitable duties
+              Completed shifts per member
             </p>
           </div>
         </div>

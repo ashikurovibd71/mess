@@ -115,14 +115,14 @@ export const CombinedDashboard: React.FC<{ onNavigate: (tab: any) => void }> = (
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-bold tracking-tight text-slate-900">
-              Mess Financial Overview & Roster
+              Mess Overview
             </h1>
             <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
               {state.mess?.name || 'Dhaka Bachelor Mess'}
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
-            Accounting, Expense Splitting & Collective Drawer Balances for {financialOverview.monthName}
+          <p className="text-xs text-slate-500 mt-0.5">
+            {financialOverview.monthName}
           </p>
         </div>
 
@@ -132,19 +132,19 @@ export const CombinedDashboard: React.FC<{ onNavigate: (tab: any) => void }> = (
             onClick={() => setIsDepositOpen(true)}
             className="px-3 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors shadow-xs"
           >
-            + Add Deposit
+            + Deposit
           </button>
           <button
             onClick={() => setIsBazarOpen(true)}
             className="px-3 py-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors"
           >
-            + Add Bazar
+            + Bazar
           </button>
           <button
             onClick={() => setIsExpenseOpen(true)}
             className="px-3 py-1.5 text-xs font-semibold text-rose-800 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors"
           >
-            + Add Bill
+            + Bill
           </button>
         </div>
       </div>
@@ -155,7 +155,7 @@ export const CombinedDashboard: React.FC<{ onNavigate: (tab: any) => void }> = (
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-              Mess Cash Balance
+              Cash Balance
             </span>
             <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
               <Wallet className="w-4 h-4" />
@@ -165,7 +165,7 @@ export const CombinedDashboard: React.FC<{ onNavigate: (tab: any) => void }> = (
             ৳{cashBalance.toLocaleString('en-IN')}
           </div>
           <div className="mt-1 text-[11px] text-slate-500">
-            Available liquid cash fund in drawer
+            Current fund in drawer
           </div>
         </div>
 
@@ -191,7 +191,7 @@ export const CombinedDashboard: React.FC<{ onNavigate: (tab: any) => void }> = (
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-              Per Member Share
+              Per Person Share
             </span>
             <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center">
               <Users className="w-4 h-4" />
@@ -201,7 +201,7 @@ export const CombinedDashboard: React.FC<{ onNavigate: (tab: any) => void }> = (
             ৳{financialOverview.perMemberShare.toLocaleString('en-IN')}
           </div>
           <div className="mt-1 text-[11px] text-slate-500">
-            ৳{financialOverview.totalExpenses} ÷ {financialOverview.activeMemberCount || 1} active members
+            Split across {financialOverview.activeMemberCount || 1} members
           </div>
         </div>
 
@@ -219,14 +219,14 @@ export const CombinedDashboard: React.FC<{ onNavigate: (tab: any) => void }> = (
             ৳{financialOverview.totalDeposits.toLocaleString('en-IN')}
           </div>
           <div className="mt-1 text-[11px] text-slate-500">
-            From {state.contributions.length} recorded deposits
+            {state.contributions.length} deposits recorded
           </div>
         </div>
       </div>
 
       {/* Two Column Layout: Today's Daily Management & Finance Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Today's Daily Mess Schedule & Meals (Section 44, 47, 56) */}
+        {/* Left Column: Today's Daily Mess Schedule & Meals */}
         <div className="lg:col-span-6 space-y-6">
           {/* Today's Duty Roster */}
           <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-2xs">
@@ -234,14 +234,14 @@ export const CombinedDashboard: React.FC<{ onNavigate: (tab: any) => void }> = (
               <div className="flex items-center gap-2">
                 <CalendarCheck className="w-4 h-4 text-slate-700" />
                 <h2 className="text-sm font-bold text-slate-900">
-                  Today’s Duties ({todayStr})
+                  Today’s Duties
                 </h2>
               </div>
               <button
                 onClick={() => onNavigate('duties')}
                 className="text-xs text-slate-500 hover:text-slate-900 font-medium flex items-center gap-1"
               >
-                <span>View Full Roster</span>
+                <span>Full Roster</span>
                 <ArrowRight className="w-3 h-3" />
               </button>
             </div>
@@ -311,7 +311,7 @@ export const CombinedDashboard: React.FC<{ onNavigate: (tab: any) => void }> = (
             {/* Upcoming duties tomorrow */}
             <div className="mt-4 pt-3 border-t border-slate-100">
               <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                Tomorrow’s Schedule ({tomorrowStr})
+                Tomorrow’s Schedule
               </div>
               <div className="flex flex-wrap gap-2 text-xs">
                 {tomorrowDuties.slice(0, 4).map((d) => {
@@ -332,33 +332,33 @@ export const CombinedDashboard: React.FC<{ onNavigate: (tab: any) => void }> = (
             </div>
           </div>
 
-          {/* Today's Meal Menu (Section 47) */}
+          {/* Today's Meal Menu */}
           <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-2xs">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <Utensils className="w-4 h-4 text-slate-700" />
-                <h2 className="text-sm font-bold text-slate-900">Today’s Meal Plan (মেনু)</h2>
+                <h2 className="text-sm font-bold text-slate-900">Today’s Meals</h2>
               </div>
               <button
                 onClick={() => onNavigate('meals-shopping')}
                 className="text-xs text-slate-500 hover:text-slate-900 font-medium"
               >
-                Edit Menu
+                Edit
               </button>
             </div>
 
             {todayMeal ? (
               <div className="mt-3 space-y-2 text-xs">
                 <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                  <span className="font-semibold text-slate-900">Breakfast (সকাল):</span>{' '}
+                  <span className="font-semibold text-slate-900">Breakfast:</span>{' '}
                   <span className="text-slate-700">{todayMeal.breakfast}</span>
                 </div>
                 <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                  <span className="font-semibold text-slate-900">Lunch (দুপুর):</span>{' '}
+                  <span className="font-semibold text-slate-900">Lunch:</span>{' '}
                   <span className="text-slate-700">{todayMeal.lunch}</span>
                 </div>
                 <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                  <span className="font-semibold text-slate-900">Dinner (রাত):</span>{' '}
+                  <span className="font-semibold text-slate-900">Dinner:</span>{' '}
                   <span className="text-slate-700">{todayMeal.dinner}</span>
                 </div>
                 {todayMeal.note && (
@@ -373,16 +373,13 @@ export const CombinedDashboard: React.FC<{ onNavigate: (tab: any) => void }> = (
           </div>
         </div>
 
-        {/* Right Column: Financial Breakdown Charts (Section 16) */}
+        {/* Right Column: Financial Breakdown Charts */}
         <div className="lg:col-span-6 space-y-6">
           {/* Member Balance Distribution Chart */}
           <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-2xs">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
-                <h2 className="text-sm font-bold text-slate-900">Member Balances (ব্যালেন্স)</h2>
-                <p className="text-xs text-slate-500">
-                  Green = Receivable (+৳) · Red = Needs to Pay (-৳)
-                </p>
+                <h2 className="text-sm font-bold text-slate-900">Member Balances</h2>
               </div>
               <button
                 onClick={() => onNavigate('settlements')}
@@ -445,7 +442,6 @@ export const CombinedDashboard: React.FC<{ onNavigate: (tab: any) => void }> = (
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
                 <h2 className="text-sm font-bold text-slate-900">Expenses by Category</h2>
-                <p className="text-xs text-slate-500">Distribution for September 2026</p>
               </div>
               <button
                 onClick={() => onNavigate('expenses')}

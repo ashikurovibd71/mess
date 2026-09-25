@@ -9,15 +9,18 @@ import {
   Sparkles,
   ArrowRight,
   ShieldCheck,
-  Plus
+  Plus,
+  Receipt
 } from 'lucide-react';
 import { RecordSettlementModal } from '../modals/RecordSettlementModal';
+import { UniversalSlipInvoiceModal, SlipInvoiceData } from '../modals/UniversalSlipInvoiceModal';
 
 export const SettlementView: React.FC = () => {
   const { financialOverview, state, membersMap, currentUser } = useMess();
 
   const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
   const [selectedSuggestion, setSelectedSuggestion] = useState<SettlementSuggestion | null>(null);
+  const [selectedSlip, setSelectedSlip] = useState<SlipInvoiceData | null>(null);
 
   const handleSettleSuggestion = (s: SettlementSuggestion) => {
     setSelectedSuggestion(s);
@@ -30,10 +33,10 @@ export const SettlementView: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-2xs">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-slate-900">
-            Automatic Settlement Engine
+            Settlements & Dues
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Section 11, 12 & 13 · Minimal transaction path algorithm (Who owes money to whom)
+            Direct member balance clearance and payments
           </p>
         </div>
 
@@ -45,21 +48,21 @@ export const SettlementView: React.FC = () => {
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors shadow-xs"
         >
           <Plus className="w-3.5 h-3.5" />
-          <span>Record Custom Settlement</span>
+          <span>Record Settlement</span>
         </button>
       </div>
 
-      {/* Suggested Settlements - The Core Feature (Section 12) */}
+      {/* Suggested Settlements */}
       <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-2xs space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-indigo-600" />
             <h2 className="text-sm font-bold text-slate-900">
-              Optimal Settlement Suggestions (স্বয়ংক্রিয় দেনা-পাওনা সমাধান)
+              Optimal Settlement Suggestions (সমাধান)
             </h2>
           </div>
           <span className="text-xs text-slate-500 font-medium">
-            Minimizes unnecessary circular transactions
+            Direct member-to-member transfers
           </span>
         </div>
 
@@ -130,16 +133,13 @@ export const SettlementView: React.FC = () => {
         )}
       </div>
 
-      {/* Member Balances Table (Section 11) */}
+      {/* Member Balances Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
           <div>
             <h2 className="text-sm font-bold text-slate-900">
-              Member Financial Balances (সদস্যদের হিসাব বিবরণী)
+              Member Balances
             </h2>
-            <p className="text-xs text-slate-500">
-              Formula: Balance = Total Deposit - Equal Share - Settlements Paid + Settlements Received
-            </p>
           </div>
         </div>
 
@@ -226,7 +226,7 @@ export const SettlementView: React.FC = () => {
                   <th className="py-2.5 px-4">Method</th>
                   <th className="py-2.5 px-4">Notes</th>
                   <th className="py-2.5 px-4 text-right">Amount (৳)</th>
-                  <th className="py-2.5 px-4 text-center">Status</th>
+                  <th className="py-2.5 px-4 text-center">Slip / Receipt</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -244,10 +244,28 @@ export const SettlementView: React.FC = () => {
                       <td className="py-2.5 px-4 text-right tabular-nums font-bold text-slate-900">
                         ৳{s.amount.toLocaleString('en-IN')}
                       </td>
-                      <td className="py-2.5 px-4 text-center">
-                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
-                          COMPLETED
-                        </span>
+                      <td className="py-2.5 px-4 text-center whitespace-nowrap">
+                        <button
+                          onClick={() =>
+                            setSelectedSlip({
+                              type: 'SETTLEMENT',
+                              id: s.id,
+                              title: `Settlement: ${from?.name} → ${to?.name}`,
+                              titleBn: 'দেনা-পাওনা নিষ্পত্তি ভাউচার',
+                              date: s.settlementDate,
+                              amount: s.amount,
+                              paymentMethod: s.paymentMethod,
+                              payerName: from?.name,
+                              receiverName: to?.name,
+                              note: s.note,
+                              recordedBy: s.recordedBy || 'Admin'
+                            })
+                          }
+                          className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg font-semibold text-[11px] transition-colors inline-flex items-center gap-1.5 shadow-2xs"
+                        >
+                          <Receipt className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>Slip</span>
+                        </button>
                       </td>
                     </tr>
                   );
@@ -269,6 +287,11 @@ export const SettlementView: React.FC = () => {
           setSelectedSuggestion(null);
         }}
         presetSuggestion={selectedSuggestion}
+      />
+      <UniversalSlipInvoiceModal
+        isOpen={!!selectedSlip}
+        onClose={() => setSelectedSlip(null)}
+        data={selectedSlip}
       />
     </div>
   );

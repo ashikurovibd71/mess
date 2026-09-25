@@ -58,10 +58,10 @@ export const ReportsView: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-2xs">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-slate-900">
-            Financial Statements & Auditable Reports
+            Reports
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Section 20 · Comprehensive monthly reports, individual member statements, and bazar audits
+            Financial summaries and statements
           </p>
         </div>
 

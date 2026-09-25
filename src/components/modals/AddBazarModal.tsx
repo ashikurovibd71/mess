@@ -111,7 +111,7 @@ export const AddBazarModal: React.FC<Props> = ({ isOpen, onClose, initialItems }
             </div>
             <div>
               <h3 className="text-base font-semibold text-slate-900">Record Bazar Expense</h3>
-              <p className="text-xs text-slate-500">বাজার খরচ ও আইটেমের তালিকা · Auto Total</p>
+              <p className="text-xs text-slate-500">Market purchase & items</p>
             </div>
           </div>
           <button
@@ -126,7 +126,7 @@ export const AddBazarModal: React.FC<Props> = ({ isOpen, onClose, initialItems }
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1">
-                Purchased By (কে বাজার করেছেন)
+                Purchased By
               </label>
               <select
                 value={purchasedBy}
@@ -150,7 +150,7 @@ export const AddBazarModal: React.FC<Props> = ({ isOpen, onClose, initialItems }
                 type="text"
                 value={marketName}
                 onChange={(e) => setMarketName(e.target.value)}
-                placeholder="e.g. Dhanmondi Raw Market"
+                placeholder="e.g. Kawran Bazar, Super Shop"
                 className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                 required
               />
@@ -158,7 +158,7 @@ export const AddBazarModal: React.FC<Props> = ({ isOpen, onClose, initialItems }
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1">
-                Date (তারিখ)
+                Date
               </label>
               <input
                 type="date"
@@ -174,7 +174,7 @@ export const AddBazarModal: React.FC<Props> = ({ isOpen, onClose, initialItems }
           <div className="pt-2 border-t border-slate-100">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-slate-700 uppercase tracking-wide">
-                Bazar Items (আইটেম তালিকা)
+                Items List
               </span>
               <button
                 type="button"

@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { useMess } from '../../context/MessContext';
 import { Plus, PiggyBank, Receipt, Calendar, CreditCard } from 'lucide-react';
 import { AddDepositModal } from '../modals/AddDepositModal';
-import { ReceiptPreviewModal } from '../modals/ReceiptPreviewModal';
+import { UniversalSlipInvoiceModal, SlipInvoiceData } from '../modals/UniversalSlipInvoiceModal';
 
 export const ContributionListView: React.FC = () => {
   const { state, membersMap } = useMess();
 
   const [isAddDepositOpen, setIsAddDepositOpen] = useState(false);
-  const [receiptPreview, setReceiptPreview] = useState<{ title: string; url?: string; amount?: number; date?: string } | null>(null);
+  const [selectedSlip, setSelectedSlip] = useState<SlipInvoiceData | null>(null);
 
   const totalContributions = state.contributions
     .filter((c) => !c.isDeleted)
@@ -20,10 +20,10 @@ export const ContributionListView: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-2xs">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-slate-900">
-            Member Money Deposits & Contributions
+            Member Deposits
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Section 6 · Whenever a member deposits cash or bKash/Nagad into the mess fund
+            Advance funds deposited by roommates
           </p>
         </div>
 
@@ -39,7 +39,7 @@ export const ContributionListView: React.FC = () => {
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors shadow-xs"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Record New Deposit</span>
+            <span>+ New Deposit</span>
           </button>
         </div>
       </div>
@@ -104,23 +104,28 @@ export const ContributionListView: React.FC = () => {
                         +৳{contrib.amount.toLocaleString('en-IN')}
                       </td>
                       <td className="py-3 px-4 text-center whitespace-nowrap">
-                        {contrib.receiptUrl ? (
-                          <button
-                            onClick={() =>
-                              setReceiptPreview({
-                                title: `Deposit Slip - ${member?.name}`,
-                                url: contrib.receiptUrl,
-                                amount: contrib.amount,
-                                date: contrib.transactionDate
-                              })
-                            }
-                            className="px-2 py-1 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded font-semibold text-[11px] transition-colors"
-                          >
-                            View Slip
-                          </button>
-                        ) : (
-                          <span className="text-slate-300 text-[11px]">—</span>
-                        )}
+                        <button
+                          onClick={() =>
+                            setSelectedSlip({
+                              type: 'DEPOSIT',
+                              id: contrib.id,
+                              title: `Deposit - ${member?.name || 'Member'}`,
+                              titleBn: 'মেস তহবিল জমা রসিদ',
+                              date: contrib.transactionDate,
+                              amount: contrib.amount,
+                              paymentMethod: contrib.paymentMethod,
+                              payerName: member?.name || 'Member',
+                              payerRole: member?.role || 'MEMBER',
+                              note: contrib.note,
+                              receiptUrl: contrib.receiptUrl,
+                              recordedBy: contrib.recordedBy || 'Admin'
+                            })
+                          }
+                          className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg font-semibold text-[11px] transition-colors inline-flex items-center gap-1.5 shadow-2xs"
+                        >
+                          <Receipt className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Slip / Invoice</span>
+                        </button>
                       </td>
                     </tr>
                   );
@@ -142,13 +147,10 @@ export const ContributionListView: React.FC = () => {
       </div>
 
       <AddDepositModal isOpen={isAddDepositOpen} onClose={() => setIsAddDepositOpen(false)} />
-      <ReceiptPreviewModal
-        isOpen={!!receiptPreview}
-        onClose={() => setReceiptPreview(null)}
-        title={receiptPreview?.title || ''}
-        receiptUrl={receiptPreview?.url}
-        amount={receiptPreview?.amount}
-        date={receiptPreview?.date}
+      <UniversalSlipInvoiceModal
+        isOpen={!!selectedSlip}
+        onClose={() => setSelectedSlip(null)}
+        data={selectedSlip}
       />
     </div>
   );

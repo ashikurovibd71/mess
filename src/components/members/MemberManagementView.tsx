@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { useMess } from '../../context/MessContext';
 import { Role } from '../../types';
-import { Users, Plus, Shield, Phone, Mail, Home, CheckCircle2, XCircle } from 'lucide-react';
+import { Users, Plus, Shield, Phone, Mail, Home, CheckCircle2, XCircle, Receipt } from 'lucide-react';
 import { AddMemberModal } from '../modals/AddMemberModal';
+import { UniversalSlipInvoiceModal, SlipInvoiceData } from '../modals/UniversalSlipInvoiceModal';
 
 export const MemberManagementView: React.FC = () => {
   const { state, currentRole, toggleMemberStatus, updateMemberRole, financialOverview } = useMess();
 
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+  const [selectedSlip, setSelectedSlip] = useState<SlipInvoiceData | null>(null);
 
   return (
     <div className="space-y-6">
@@ -15,10 +17,10 @@ export const MemberManagementView: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-2xs">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-slate-900">
-            Mess Member Directory & Management
+            Mess Members
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Section 4 · Manage roommates, assign Admin/Cashier roles, and handle member status
+            Active roommates and account status
           </p>
         </div>
 
@@ -28,7 +30,7 @@ export const MemberManagementView: React.FC = () => {
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors shadow-xs"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Add New Member</span>
+            <span>+ Add Member</span>
           </button>
         )}
       </div>
@@ -114,6 +116,33 @@ export const MemberManagementView: React.FC = () => {
                 </div>
               )}
 
+              {/* Member Invoice & Statement Slip */}
+              {summary && (
+                <button
+                  onClick={() =>
+                    setSelectedSlip({
+                      type: 'MEMBER_STATEMENT',
+                      id: member.id,
+                      title: `Statement - ${member.name}`,
+                      titleBn: 'মেম্বার মাসিক হিসাব বিবরণী',
+                      date: new Date().toISOString().split('T')[0],
+                      amount: Math.abs(summary.netBalance),
+                      payerName: member.name,
+                      payerRole: member.role,
+                      note: `Deposited: ৳${summary.totalDeposited}, Share: ৳${summary.share}, Net: ${summary.netBalance >= 0 ? '+' : ''}৳${summary.netBalance}`,
+                      items: [
+                        { itemName: 'Total Mess Fund Advance Deposited', quantity: 1, unit: 'sum', unitPrice: summary.totalDeposited, totalPrice: summary.totalDeposited },
+                        { itemName: 'Equal Share of Mess Shared Expenses', quantity: 1, unit: 'share', unitPrice: summary.share, totalPrice: summary.share }
+                      ]
+                    })
+                  }
+                  className="w-full py-1.5 px-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <Receipt className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Statement & Invoice</span>
+                </button>
+              )}
+
               {/* Admin actions */}
               {currentRole === 'ADMIN' && (
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2 text-xs">
@@ -148,6 +177,11 @@ export const MemberManagementView: React.FC = () => {
       </div>
 
       <AddMemberModal isOpen={isAddMemberOpen} onClose={() => setIsAddMemberOpen(false)} />
+      <UniversalSlipInvoiceModal
+        isOpen={!!selectedSlip}
+        onClose={() => setSelectedSlip(null)}
+        data={selectedSlip}
+      />
     </div>
   );
 };

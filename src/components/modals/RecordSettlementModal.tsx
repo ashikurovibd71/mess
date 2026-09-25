@@ -68,7 +68,7 @@ export const RecordSettlementModal: React.FC<Props> = ({
             </div>
             <div>
               <h3 className="text-base font-semibold text-slate-900">Record Settlement Payment</h3>
-              <p className="text-xs text-slate-500">পারস্পরিক পাওনা-দেনা নিষ্পত্তি</p>
+              <p className="text-xs text-slate-500">Direct member-to-member payment</p>
             </div>
           </div>
           <button
@@ -80,20 +80,10 @@ export const RecordSettlementModal: React.FC<Props> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="p-3 bg-indigo-50/70 border border-indigo-100 rounded-lg text-xs text-indigo-900 space-y-1">
-            <div className="flex items-center gap-1.5 font-semibold">
-              <CheckCircle2 className="w-4 h-4 text-indigo-600" />
-              <span>Accounting Rule 3 & 15:</span>
-            </div>
-            <p className="text-indigo-700 leading-relaxed">
-              Personal member-to-member settlements balance member dues directly and do <strong>not</strong> change the collective mess cash fund.
-            </p>
-          </div>
-
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1.5">
-                From (কে পরিশোধ করছে - Debtor)
+                Paid By
               </label>
               <select
                 value={fromMemberId}
@@ -111,7 +101,7 @@ export const RecordSettlementModal: React.FC<Props> = ({
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1.5">
-                To (কে টাকা পাচ্ছে - Creditor)
+                Paid To
               </label>
               <select
                 value={toMemberId}
@@ -131,7 +121,7 @@ export const RecordSettlementModal: React.FC<Props> = ({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1.5">
-                Settlement Amount (টাকা ৳)
+                Amount (৳)
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-2 text-xs font-semibold text-slate-400">৳</span>
@@ -157,9 +147,9 @@ export const RecordSettlementModal: React.FC<Props> = ({
                 onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
                 className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none"
               >
-                <option value="BKASH">bKash (বিকাশ)</option>
-                <option value="NAGAD">Nagad (নগদ)</option>
-                <option value="CASH">Direct Cash (হাতে হাতে)</option>
+                <option value="BKASH">bKash</option>
+                <option value="NAGAD">Nagad</option>
+                <option value="CASH">Cash</option>
                 <option value="BANK">Bank Transfer</option>
               </select>
             </div>
@@ -167,7 +157,7 @@ export const RecordSettlementModal: React.FC<Props> = ({
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1.5">
-              Settlement Date (তারিখ)
+              Date
             </label>
             <input
               type="date"

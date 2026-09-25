@@ -26,10 +26,10 @@ export const AuditLogsView: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-2xs">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-slate-900">
-            System Audit Trail & Financial Logs
+            Audit Logs
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Section 22 · Immutable record of every financial transaction, duty roster change, and period closure
+            System activity and audit history
           </p>
         </div>
 

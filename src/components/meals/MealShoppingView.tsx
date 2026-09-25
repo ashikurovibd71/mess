@@ -83,10 +83,10 @@ export const MealShoppingView: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-2xs">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-slate-900">
-            Mess Meal Plan & Shopping List
+            Meals & Shopping
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Section 47–49 · Plan daily cooking menus and manage Bazar shopping list with 1-click expense conversion
+            Daily cooking menu and shopping list
           </p>
         </div>
 
@@ -96,20 +96,20 @@ export const MealShoppingView: React.FC = () => {
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors shadow-xs"
           >
             <ListPlus className="w-3.5 h-3.5" />
-            <span>Add Shopping Item</span>
+            <span>+ Add Item</span>
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left: Today's Cooking / Meal Plan (Section 47) */}
+        {/* Left: Today's Cooking / Meal Plan */}
         <div className="lg:col-span-5 space-y-4">
           <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-2xs">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
               <div className="flex items-center gap-2">
                 <UtensilsCrossed className="w-4 h-4 text-slate-700" />
                 <h2 className="text-sm font-bold text-slate-900">
-                  Daily Meal Plan (আজকের খাবার মেনু)
+                  Daily Meal Plan
                 </h2>
               </div>
               <span className="text-xs font-semibold text-slate-500">{selectedDate}</span>
@@ -118,7 +118,7 @@ export const MealShoppingView: React.FC = () => {
             <form onSubmit={handleSaveMeal} className="space-y-3.5 text-xs">
               <div>
                 <label className="block font-semibold text-slate-700 uppercase tracking-wide mb-1 text-[11px]">
-                  Breakfast (সকালের নাস্তা)
+                  Breakfast
                 </label>
                 <input
                   type="text"
@@ -132,7 +132,7 @@ export const MealShoppingView: React.FC = () => {
 
               <div>
                 <label className="block font-semibold text-slate-700 uppercase tracking-wide mb-1 text-[11px]">
-                  Lunch (দুপুরের খাবার)
+                  Lunch
                 </label>
                 <input
                   type="text"
@@ -146,7 +146,7 @@ export const MealShoppingView: React.FC = () => {
 
               <div>
                 <label className="block font-semibold text-slate-700 uppercase tracking-wide mb-1 text-[11px]">
-                  Dinner (রাতের খাবার)
+                  Dinner
                 </label>
                 <input
                   type="text"
@@ -160,13 +160,13 @@ export const MealShoppingView: React.FC = () => {
 
               <div>
                 <label className="block font-semibold text-slate-700 uppercase tracking-wide mb-1 text-[11px]">
-                  Special Instructions / Guest Notes
+                  Special Instructions
                 </label>
                 <input
                   type="text"
                   value={mealNote}
                   onChange={(e) => setMealNote(e.target.value)}
-                  placeholder="e.g. 2 guests arriving for dinner, cook extra rice"
+                  placeholder="e.g. Cook at 12:30 PM"
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none"
                 />
               </div>
@@ -188,17 +188,14 @@ export const MealShoppingView: React.FC = () => {
           </div>
         </div>
 
-        {/* Right: Shopping List & 1-Click Bazar Expense Integration (Section 48 & 49) */}
+        {/* Right: Shopping List & 1-Click Bazar Expense Integration */}
         <div className="lg:col-span-7 space-y-4">
           <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-2xs space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
               <div>
                 <h2 className="text-sm font-bold text-slate-900">
-                  Upcoming Bazar Shopping List ({state.shoppingList.length} items)
+                  Shopping List ({state.shoppingList.length})
                 </h2>
-                <p className="text-xs text-slate-500">
-                  Section 48 · What needs to be purchased from the raw market
-                </p>
               </div>
 
               {pendingShoppingItems.length > 0 && (
@@ -278,12 +275,10 @@ export const MealShoppingView: React.FC = () => {
               })}
             </div>
 
-            {/* Explanatory callout for Section 49 */}
-            <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-lg text-xs text-emerald-950 flex items-start gap-2.5">
-              <Sparkles className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
-              <div className="leading-relaxed">
-                <strong>Section 49 Integration:</strong> Clicking "Convert to Bazar Expense" transfers all pending items directly into a real mess Bazar Record with line items, automatically decrements mess cash funds, updates the monthly accounting, and marks the items as purchased!
-              </div>
+            {/* Explanatory callout */}
+            <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800 flex items-center gap-2">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span>"Convert to Bazar" automatically saves pending items as a recorded bazar expense.</span>
             </div>
           </div>
         </div>

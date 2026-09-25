@@ -66,8 +66,8 @@ export const AddExpenseModal: React.FC<Props> = ({ isOpen, onClose, presetCatego
               <Receipt className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-base font-semibold text-slate-900">Add Mess Expense / Utility Bill</h3>
-              <p className="text-xs text-slate-500">ইউটিলিটি বিল বা অন্যান্য মেস খরচ</p>
+              <h3 className="text-base font-semibold text-slate-900">Add Expense / Bill</h3>
+              <p className="text-xs text-slate-500">Mess utility or operational expense</p>
             </div>
           </div>
           <button
@@ -81,7 +81,7 @@ export const AddExpenseModal: React.FC<Props> = ({ isOpen, onClose, presetCatego
         {isMonthClosed && (
           <div className="mx-6 mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-xs text-amber-800">
             <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>This month is closed. Expenses cannot be added without reopening.</span>
+            <span>This month is closed. Expenses cannot be added.</span>
           </div>
         )}
 
@@ -89,7 +89,7 @@ export const AddExpenseModal: React.FC<Props> = ({ isOpen, onClose, presetCatego
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1.5">
-                Category (ক্যাটাগরি)
+                Category
               </label>
               <select
                 value={categoryId}
@@ -107,7 +107,7 @@ export const AddExpenseModal: React.FC<Props> = ({ isOpen, onClose, presetCatego
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1.5">
-                Amount (টাকা ৳)
+                Amount (৳)
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-2 text-xs font-semibold text-slate-400">৳</span>
@@ -127,11 +127,11 @@ export const AddExpenseModal: React.FC<Props> = ({ isOpen, onClose, presetCatego
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1.5">
-              Description (বিবরণ)
+              Description
             </label>
             <input
               type="text"
-              placeholder="e.g. DESCO Prepaid Electricity Token / AmberIT Internet"
+              placeholder="e.g. Electricity bill, Cook salary, WiFi"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10"
@@ -142,7 +142,7 @@ export const AddExpenseModal: React.FC<Props> = ({ isOpen, onClose, presetCatego
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1.5">
-                Date (তারিখ)
+                Date
               </label>
               <input
                 type="date"

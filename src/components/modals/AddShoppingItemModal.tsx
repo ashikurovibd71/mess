@@ -51,8 +51,8 @@ export const AddShoppingItemModal: React.FC<Props> = ({ isOpen, onClose }) => {
               <ListPlus className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-base font-semibold text-slate-900">Add to Shopping List</h3>
-              <p className="text-xs text-slate-500">বাজারের ফর্দ যোগ করুন · Section 48</p>
+              <h3 className="text-base font-semibold text-slate-900">Add Shopping Item</h3>
+              <p className="text-xs text-slate-500">Market grocery item</p>
             </div>
           </div>
           <button
@@ -66,7 +66,7 @@ export const AddShoppingItemModal: React.FC<Props> = ({ isOpen, onClose }) => {
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1.5">
-              Item Name (পণ্যের নাম)
+              Item Name
             </label>
             <input
               type="text"

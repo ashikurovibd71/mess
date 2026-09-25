@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useMess } from '../../context/MessContext';
-import { Plus, Receipt, Search, Filter, Calendar, ExternalLink, Zap, Flame, Wifi, Home, Sparkles, Droplets } from 'lucide-react';
+import { Plus, Receipt, Search, Filter, Calendar, Zap, Flame, Wifi, Home, Sparkles, Droplets } from 'lucide-react';
 import { AddExpenseModal } from '../modals/AddExpenseModal';
-import { ReceiptPreviewModal } from '../modals/ReceiptPreviewModal';
+import { UniversalSlipInvoiceModal, SlipInvoiceData } from '../modals/UniversalSlipInvoiceModal';
 import { ExpenseCategoryCode } from '../../types';
 
 export const ExpenseListView: React.FC = () => {
@@ -11,7 +11,7 @@ export const ExpenseListView: React.FC = () => {
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
-  const [receiptPreview, setReceiptPreview] = useState<{ title: string; url?: string; amount?: number; date?: string } | null>(null);
+  const [selectedSlip, setSelectedSlip] = useState<SlipInvoiceData | null>(null);
 
   const filteredExpenses = state.expenses.filter((exp) => {
     if (exp.isDeleted) return false;
@@ -44,10 +44,10 @@ export const ExpenseListView: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-2xs">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-slate-900">
-            Expenses & Utility Bills Management
+            Expenses & Bills
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Section 7 & 9 · Track monthly electricity, gas, internet, maid, and apartment overheads
+            Utility bills and shared mess expenses
           </p>
         </div>
 
@@ -63,7 +63,7 @@ export const ExpenseListView: React.FC = () => {
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors shadow-xs"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Add Expense / Bill</span>
+            <span>+ Add Bill</span>
           </button>
         </div>
       </div>
@@ -148,23 +148,29 @@ export const ExpenseListView: React.FC = () => {
                       ৳{exp.amount.toLocaleString('en-IN')}
                     </td>
                     <td className="py-3 px-4 text-center whitespace-nowrap">
-                      {exp.receiptUrl ? (
-                        <button
-                          onClick={() =>
-                            setReceiptPreview({
-                              title: exp.description,
-                              url: exp.receiptUrl,
-                              amount: exp.amount,
-                              date: exp.expenseDate
-                            })
-                          }
-                          className="px-2 py-1 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded font-semibold text-[11px] transition-colors"
-                        >
-                          View Voucher
-                        </button>
-                      ) : (
-                        <span className="text-slate-300 text-[11px]">—</span>
-                      )}
+                      <button
+                        onClick={() =>
+                          setSelectedSlip({
+                            type: 'EXPENSE',
+                            id: exp.id,
+                            title: exp.description,
+                            titleBn: 'মেস খরচ ও বিল ভাউচার',
+                            date: exp.expenseDate,
+                            amount: exp.amount,
+                            paymentMethod: exp.paymentMethod,
+                            payerName: paidByMember?.name || 'Mess Fund',
+                            payerRole: paidByMember?.role || 'MEMBER',
+                            category: exp.categoryCode,
+                            note: exp.note,
+                            receiptUrl: exp.receiptUrl,
+                            recordedBy: exp.recordedBy || 'Admin'
+                          })
+                        }
+                        className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg font-semibold text-[11px] transition-colors inline-flex items-center gap-1.5 shadow-2xs"
+                      >
+                        <Receipt className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Voucher / Slip</span>
+                      </button>
                     </td>
                   </tr>
                 );
@@ -186,13 +192,10 @@ export const ExpenseListView: React.FC = () => {
       </div>
 
       <AddExpenseModal isOpen={isAddExpenseOpen} onClose={() => setIsAddExpenseOpen(false)} />
-      <ReceiptPreviewModal
-        isOpen={!!receiptPreview}
-        onClose={() => setReceiptPreview(null)}
-        title={receiptPreview?.title || ''}
-        receiptUrl={receiptPreview?.url}
-        amount={receiptPreview?.amount}
-        date={receiptPreview?.date}
+      <UniversalSlipInvoiceModal
+        isOpen={!!selectedSlip}
+        onClose={() => setSelectedSlip(null)}
+        data={selectedSlip}
       />
     </div>
   );

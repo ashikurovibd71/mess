@@ -11,8 +11,10 @@ import {
   ArrowDownLeft,
   ArrowRightLeft,
   Calendar,
-  Wallet
+  Wallet,
+  Receipt
 } from 'lucide-react';
+import { UniversalSlipInvoiceModal, SlipInvoiceData } from '../modals/UniversalSlipInvoiceModal';
 
 export const LedgerView: React.FC = () => {
   const { state, membersMap, categoriesMap, cashBalance } = useMess();
@@ -20,6 +22,7 @@ export const LedgerView: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('ALL');
   const [filterMember, setFilterMember] = useState<string>('ALL');
+  const [selectedSlip, setSelectedSlip] = useState<SlipInvoiceData | null>(null);
 
   // Build unified ledger entries
   const currentMonthAccount = state.monthlyAccounts.find(
@@ -90,16 +93,16 @@ export const LedgerView: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-2xs">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-slate-900">
-            Unified Mess Financial Ledger
+            Mess Ledger
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Section 14 & 15 · Chronological audit ledger distinguishing mess fund flows from member settlements
+            All deposits, bazar, and expenses in one place
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <div className="text-right hidden sm:block">
-            <div className="text-[11px] font-semibold text-slate-500 uppercase">Closing Cash Position</div>
+            <div className="text-[11px] font-semibold text-slate-500 uppercase">Cash Position</div>
             <div className="text-base font-bold text-slate-900 tabular-nums">
               ৳{cashBalance.toLocaleString('en-IN')}
             </div>
@@ -166,6 +169,7 @@ export const LedgerView: React.FC = () => {
                 <th className="py-3 px-4 text-right">Amount (৳)</th>
                 <th className="py-3 px-4 text-right">Impact on Cash</th>
                 <th className="py-3 px-4 text-right">Running Cash</th>
+                <th className="py-3 px-4 text-center">Receipt / Slip</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium">
@@ -215,6 +219,27 @@ export const LedgerView: React.FC = () => {
                     <td className="py-3 px-4 text-right tabular-nums text-slate-700 font-medium whitespace-nowrap">
                       {item.runningBalance !== undefined ? `৳${item.runningBalance.toLocaleString('en-IN')}` : '—'}
                     </td>
+                    <td className="py-3 px-4 text-center whitespace-nowrap">
+                      <button
+                        onClick={() =>
+                          setSelectedSlip({
+                            type: isDeposit ? 'DEPOSIT' : isExpense ? 'EXPENSE' : 'SETTLEMENT',
+                            id: item.id,
+                            title: item.title,
+                            titleBn: isDeposit ? 'জমা রসিদ' : isExpense ? 'খরচ ভাউচার' : 'নিষ্পত্তি স্লিপ',
+                            date: item.date,
+                            amount: item.amount,
+                            payerName: item.memberName || 'Mess Member',
+                            description: item.description
+                          })
+                        }
+                        className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded font-semibold text-[11px] transition-colors inline-flex items-center gap-1"
+                        title="View Slip / Invoice"
+                      >
+                        <Receipt className="w-3.5 h-3.5 text-slate-600" />
+                        <span>Slip</span>
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
@@ -222,6 +247,12 @@ export const LedgerView: React.FC = () => {
           </table>
         </div>
       </div>
+
+      <UniversalSlipInvoiceModal
+        isOpen={!!selectedSlip}
+        onClose={() => setSelectedSlip(null)}
+        data={selectedSlip}
+      />
     </div>
   );
 };

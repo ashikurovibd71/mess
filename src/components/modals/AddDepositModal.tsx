@@ -47,8 +47,8 @@ export const AddDepositModal: React.FC<Props> = ({ isOpen, onClose }) => {
       <div className="bg-white rounded-xl shadow-xl w-full max-w-lg border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
           <div>
-            <h3 className="text-base font-semibold text-slate-900">Record Member Deposit</h3>
-            <p className="text-xs text-slate-500">জমা গ্রহণ · Cashier / Admin</p>
+            <h3 className="text-base font-semibold text-slate-900">Record Deposit</h3>
+            <p className="text-xs text-slate-500">Mess fund advance</p>
           </div>
           <button
             onClick={onClose}
@@ -61,14 +61,14 @@ export const AddDepositModal: React.FC<Props> = ({ isOpen, onClose }) => {
         {isMonthClosed && (
           <div className="mx-6 mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-xs text-amber-800">
             <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>This month is closed. Deposit cannot be recorded until reopened by Admin.</span>
+            <span>This month is closed. Deposit cannot be recorded.</span>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1.5">
-              Member (সদস্য)
+              Member
             </label>
             <select
               value={memberId}
@@ -78,7 +78,7 @@ export const AddDepositModal: React.FC<Props> = ({ isOpen, onClose }) => {
             >
               {activeMembers.map((m) => (
                 <option key={m.id} value={m.id}>
-                  {m.name} {m.nameBn ? `(${m.nameBn})` : ''} — {m.role}
+                  {m.name} — {m.role}
                 </option>
               ))}
             </select>
@@ -87,7 +87,7 @@ export const AddDepositModal: React.FC<Props> = ({ isOpen, onClose }) => {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1.5">
-                Amount (টাকা ৳)
+                Amount (৳)
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-2.5 text-sm font-semibold text-slate-400">৳</span>
@@ -113,10 +113,10 @@ export const AddDepositModal: React.FC<Props> = ({ isOpen, onClose }) => {
                 onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
                 className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 font-medium"
               >
-                <option value="CASH">Cash (ক্যাশ টাকা)</option>
-                <option value="BKASH">bKash (বিকাশ)</option>
-                <option value="NAGAD">Nagad (নগদ)</option>
-                <option value="BANK">Bank Transfer (ব্যাংক)</option>
+                <option value="CASH">Cash</option>
+                <option value="BKASH">bKash</option>
+                <option value="NAGAD">Nagad</option>
+                <option value="BANK">Bank Transfer</option>
                 <option value="OTHER">Other</option>
               </select>
             </div>
@@ -124,7 +124,7 @@ export const AddDepositModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1.5">
-              Deposit Date (তারিখ)
+              Date
             </label>
             <input
               type="date"
@@ -137,7 +137,7 @@ export const AddDepositModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1.5">
-              Notes (নোট / ট্রানজেকশন আইডি)
+              Notes / TrxID
             </label>
             <input
               type="text"

@@ -47,7 +47,7 @@ export const GenerateDutyModal: React.FC<Props> = ({ isOpen, onClose }) => {
             </div>
             <div>
               <h3 className="text-base font-semibold text-slate-900">Auto-Generate Duty Roster</h3>
-              <p className="text-xs text-slate-500">স্বয়ংক্রিয় সুষম দায়িত্ব বণ্টন · Section 40</p>
+              <p className="text-xs text-slate-500">Fair rotation across active roommates</p>
             </div>
           </div>
           <button
@@ -59,15 +59,9 @@ export const GenerateDutyModal: React.FC<Props> = ({ isOpen, onClose }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-lg text-xs text-blue-900">
-            <p className="leading-relaxed">
-              Duties are automatically staggered and fairly rotated across all <strong>{activeMembers.length} active members</strong> ({activeMembers.map(m => m.name).join(', ')}).
-            </p>
-          </div>
-
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1.5">
-              Start Date (শুরুর তারিখ)
+              Start Date
             </label>
             <input
               type="date"

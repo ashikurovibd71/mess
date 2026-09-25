@@ -48,8 +48,8 @@ export const AddMemberModal: React.FC<Props> = ({ isOpen, onClose }) => {
               <UserPlus className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-base font-semibold text-slate-900">Add New Mess Member</h3>
-              <p className="text-xs text-slate-500">নতুন মেস মেম্বার যুক্ত করুন · Section 4</p>
+              <h3 className="text-base font-semibold text-slate-900">Add Roommate</h3>
+              <p className="text-xs text-slate-500">New mess member profile</p>
             </div>
           </div>
           <button

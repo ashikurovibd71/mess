@@ -82,20 +82,20 @@ export const AppLayout: React.FC<Props> = ({ activeTab, setActiveTab, children }
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
     {
       id: 'duties',
-      label: 'Daily Duties',
+      label: 'Duties',
       icon: <CalendarCheck className="w-4 h-4" />,
       badge: state.dutySwaps.filter((s) => s.status === 'PENDING').length || undefined
     },
-    { id: 'meals-shopping', label: 'Meal & Shopping', icon: <UtensilsCrossed className="w-4 h-4" /> },
-    { id: 'bazar', label: 'Bazar Records', icon: <ShoppingCart className="w-4 h-4" /> },
+    { id: 'meals-shopping', label: 'Meals & Market', icon: <UtensilsCrossed className="w-4 h-4" /> },
+    { id: 'bazar', label: 'Bazar', icon: <ShoppingCart className="w-4 h-4" /> },
     { id: 'expenses', label: 'Expenses & Bills', icon: <Receipt className="w-4 h-4" /> },
     { id: 'contributions', label: 'Deposits', icon: <PiggyBank className="w-4 h-4" /> },
-    { id: 'settlements', label: 'Settlement Engine', icon: <ArrowRightLeft className="w-4 h-4" /> },
-    { id: 'ledger', label: 'Unified Ledger', icon: <BookOpen className="w-4 h-4" /> },
-    { id: 'monthly-accounts', label: 'Monthly Closing', icon: <CalendarDays className="w-4 h-4" /> },
-    { id: 'reports', label: 'Financial Reports', icon: <FileSpreadsheet className="w-4 h-4" /> },
-    { id: 'members', label: 'Mess Members', icon: <Users className="w-4 h-4" /> },
-    { id: 'audit-logs', label: 'Audit Trail', icon: <ShieldCheck className="w-4 h-4" /> }
+    { id: 'settlements', label: 'Settlements', icon: <ArrowRightLeft className="w-4 h-4" /> },
+    { id: 'ledger', label: 'Ledger', icon: <BookOpen className="w-4 h-4" /> },
+    { id: 'monthly-accounts', label: 'Monthly Accounts', icon: <CalendarDays className="w-4 h-4" /> },
+    { id: 'reports', label: 'Reports', icon: <FileSpreadsheet className="w-4 h-4" /> },
+    { id: 'members', label: 'Members', icon: <Users className="w-4 h-4" /> },
+    { id: 'audit-logs', label: 'Audit Logs', icon: <ShieldCheck className="w-4 h-4" /> }
   ];
 
   return (
@@ -266,12 +266,9 @@ export const AppLayout: React.FC<Props> = ({ activeTab, setActiveTab, children }
               {isRoleDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-200 p-2 z-50 animate-in fade-in zoom-in-95 duration-100">
                   <div className="px-3 py-2 border-b border-slate-100">
-                    <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
-                      Switch Active Member Role
+                    <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
+                      Switch Active Member
                     </span>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Switch between Admin, Cashier, and Member to experience role-based views.
-                    </p>
                   </div>
                   <div className="py-1">
                     {state.members.map((member) => (
@@ -309,7 +306,7 @@ export const AppLayout: React.FC<Props> = ({ activeTab, setActiveTab, children }
                       className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50 rounded-lg transition-colors font-semibold"
                     >
                       <LogIn className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Sign In / Custom Login (লগইন)</span>
+                      <span>Sign In / Custom Login</span>
                     </button>
 
                     {isAuthenticated && (
@@ -321,13 +318,13 @@ export const AppLayout: React.FC<Props> = ({ activeTab, setActiveTab, children }
                         className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50 rounded-lg transition-colors font-medium"
                       >
                         <LogOut className="w-3.5 h-3.5" />
-                        <span>Sign Out (লগআউট)</span>
+                        <span>Sign Out</span>
                       </button>
                     )}
 
                     <button
                       onClick={async () => {
-                        if (window.confirm('Are you sure you want to clear all transactional records from Neon PostgreSQL? This cannot be undone.')) {
+                        if (window.confirm('Are you sure you want to clear all transactional records? This cannot be undone.')) {
                           await clearAllDatabaseData();
                           setIsRoleDropdownOpen(false);
                         }
@@ -335,7 +332,7 @@ export const AppLayout: React.FC<Props> = ({ activeTab, setActiveTab, children }
                       className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg transition-colors font-medium"
                     >
                       <Database className="w-3.5 h-3.5" />
-                      <span>Wipe / Clear All Data from Neon DB</span>
+                      <span>Clear All Data</span>
                     </button>
                   </div>
                 </div>
