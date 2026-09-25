@@ -40,6 +40,12 @@ import {
   calculateDutyStats,
   MemberDutyStat
 } from '../services/dutyEngine';
+import {
+  apiRequest,
+  getStoredToken,
+  setStoredToken,
+  clearStoredToken
+} from '../services/api';
 
 interface MessContextType {
   state: AppState;
@@ -127,12 +133,57 @@ interface MessContextType {
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
   resetDemoData: () => void;
+
+  // Real Database & Authentication
+  isAuthenticated: boolean;
+  isAuthModalOpen: boolean;
+  setIsAuthModalOpen: (open: boolean) => void;
+  loginWithCredentials: (email: string, password?: string) => Promise<void>;
+  registerUser: (data: { name: string; email: string; password: string; phone?: string; role?: Role }) => Promise<void>;
+  logout: () => void;
+  dbStatus: 'connected' | 'checking' | 'fallback';
 }
 
 const MessContext = createContext<MessContextType | undefined>(undefined);
 
 export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, setState] = useState<AppState>(getInitialState);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => !!getStoredToken());
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [dbStatus, setDbStatus] = useState<'connected' | 'checking' | 'fallback'>('checking');
+
+  // Dynamically load from PostgreSQL backend on mount
+  useEffect(() => {
+    async function loadBackendData() {
+      try {
+        const data = await apiRequest('/api/bootstrap');
+        if (data && data.members && data.members.length > 0) {
+          setState((prev) => ({
+            ...prev,
+            mess: data.mess || prev.mess,
+            members: data.members || prev.members,
+            monthlyAccounts: data.monthlyAccounts || prev.monthlyAccounts,
+            categories: data.categories || prev.categories,
+            contributions: data.contributions || prev.contributions,
+            expenses: data.expenses || prev.expenses,
+            bazarRecords: data.bazarRecords || prev.bazarRecords,
+            settlements: data.settlements || prev.settlements,
+            dutySchedules: data.dutySchedules || prev.dutySchedules,
+            dutySwaps: data.dutySwaps || prev.dutySwaps,
+            mealPlans: data.mealPlans || prev.mealPlans,
+            shoppingList: data.shoppingList || prev.shoppingList,
+            auditLogs: data.auditLogs || prev.auditLogs,
+            notifications: data.notifications || prev.notifications
+          }));
+          setDbStatus('connected');
+        }
+      } catch (err) {
+        console.warn('Backend API initializing or offline, using active state:', err);
+        setDbStatus('fallback');
+      }
+    }
+    loadBackendData();
+  }, []);
 
   // Sync state to LocalStorage
   useEffect(() => {
@@ -1077,6 +1128,75 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setState(getInitialState());
   };
 
+  const loginWithCredentials = async (email: string, password?: string) => {
+    try {
+      const res = await apiRequest('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password })
+      });
+      if (res && res.token && res.user) {
+        setStoredToken(res.token);
+        setIsAuthenticated(true);
+        setState((prev) => ({ ...prev, currentUserId: res.user.id }));
+      }
+    } catch (err: any) {
+      // Local fallback for offline/demo
+      const found = state.members.find((m) => m.email.toLowerCase() === email.toLowerCase());
+      if (found) {
+        setStoredToken(`local-token-${found.id}`);
+        setIsAuthenticated(true);
+        setState((prev) => ({ ...prev, currentUserId: found.id }));
+      } else {
+        throw new Error(err.message || 'User not found');
+      }
+    }
+  };
+
+  const registerUser = async (data: { name: string; email: string; password: string; phone?: string; role?: Role }) => {
+    try {
+      const res = await apiRequest('/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      });
+      if (res && res.token && res.user) {
+        setStoredToken(res.token);
+        setIsAuthenticated(true);
+        setState((prev) => ({
+          ...prev,
+          currentUserId: res.user.id,
+          members: [...prev.members, res.user]
+        }));
+      }
+    } catch (err: any) {
+      // Local fallback
+      const newId = `user-${Date.now()}`;
+      const newUser: User = {
+        id: newId,
+        name: data.name,
+        email: data.email,
+        phone: data.phone || '+880 1700-000000',
+        role: data.role || 'MEMBER',
+        status: 'ACTIVE',
+        joinDate: new Date().toISOString().split('T')[0],
+        messId: state.activeMessId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      setStoredToken(`local-token-${newId}`);
+      setIsAuthenticated(true);
+      setState((prev) => ({
+        ...prev,
+        currentUserId: newId,
+        members: [...prev.members, newUser]
+      }));
+    }
+  };
+
+  const logout = () => {
+    clearStoredToken();
+    setIsAuthenticated(false);
+  };
+
   return (
     <MessContext.Provider
       value={{
@@ -1114,7 +1234,14 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         updateMemberRole,
         markNotificationRead,
         markAllNotificationsRead,
-        resetDemoData
+        resetDemoData,
+        isAuthenticated,
+        isAuthModalOpen,
+        setIsAuthModalOpen,
+        loginWithCredentials,
+        registerUser,
+        logout,
+        dbStatus
       }}
     >
       {children}

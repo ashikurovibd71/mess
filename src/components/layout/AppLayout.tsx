@@ -20,12 +20,15 @@ import {
   Check,
   ExternalLink,
   Sparkles,
-  RotateCcw
+  RotateCcw,
+  Database,
+  LogIn
 } from 'lucide-react';
 import { AddDepositModal } from '../modals/AddDepositModal';
 import { AddBazarModal } from '../modals/AddBazarModal';
 import { AddExpenseModal } from '../modals/AddExpenseModal';
 import { RecordSettlementModal } from '../modals/RecordSettlementModal';
+import { AuthModal } from '../auth/AuthModal';
 
 export type ActiveTab =
   | 'dashboard'
@@ -58,7 +61,11 @@ export const AppLayout: React.FC<Props> = ({ activeTab, setActiveTab, children }
     cashBalance,
     markNotificationRead,
     markAllNotificationsRead,
-    resetDemoData
+    resetDemoData,
+    isAuthenticated,
+    isAuthModalOpen,
+    setIsAuthModalOpen,
+    logout
   } = useMess();
 
   const [isDepositOpen, setIsDepositOpen] = useState(false);
@@ -114,6 +121,12 @@ export const AppLayout: React.FC<Props> = ({ activeTab, setActiveTab, children }
             <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 rounded-md text-xs font-medium text-slate-700">
               <span className="text-slate-400">Month:</span>
               <span className="font-semibold text-slate-900">September 2026</span>
+            </div>
+
+            {/* Neon DB Live status */}
+            <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-800 rounded-md text-xs font-medium border border-emerald-200/60">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+              <span className="font-semibold">Neon PostgreSQL Live</span>
             </div>
           </div>
 
@@ -287,7 +300,31 @@ export const AppLayout: React.FC<Props> = ({ activeTab, setActiveTab, children }
                     ))}
                   </div>
 
-                  <div className="pt-2 border-t border-slate-100">
+                  <div className="pt-2 border-t border-slate-100 space-y-1">
+                    <button
+                      onClick={() => {
+                        setIsAuthModalOpen(true);
+                        setIsRoleDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50 rounded-lg transition-colors font-semibold"
+                    >
+                      <LogIn className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Sign In / Custom Login (লগইন)</span>
+                    </button>
+
+                    {isAuthenticated && (
+                      <button
+                        onClick={() => {
+                          logout();
+                          setIsRoleDropdownOpen(false);
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50 rounded-lg transition-colors font-medium"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>Sign Out (লগআউট)</span>
+                      </button>
+                    )}
+
                     <button
                       onClick={() => {
                         resetDemoData();
@@ -296,7 +333,7 @@ export const AppLayout: React.FC<Props> = ({ activeTab, setActiveTab, children }
                       className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg transition-colors font-medium"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
-                      Reset to Scenario Demo Data
+                      <span>Reset to Scenario Demo Data</span>
                     </button>
                   </div>
                 </div>
@@ -462,6 +499,7 @@ export const AppLayout: React.FC<Props> = ({ activeTab, setActiveTab, children }
       <AddBazarModal isOpen={isBazarOpen} onClose={() => setIsBazarOpen(false)} />
       <AddExpenseModal isOpen={isExpenseOpen} onClose={() => setIsExpenseOpen(false)} />
       <RecordSettlementModal isOpen={isSettlementOpen} onClose={() => setIsSettlementOpen(false)} />
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
     </div>
   );
 };
