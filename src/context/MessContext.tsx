@@ -466,7 +466,7 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setState((prev) => {
       const contributionIndex = prev.contributions.findIndex(c => c.id === id);
       if (contributionIndex === -1) return prev;
-      
+
       const newContributions = [...prev.contributions];
       newContributions[contributionIndex] = {
         ...newContributions[contributionIndex],
@@ -943,8 +943,8 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         ),
         dutySchedules: approve
           ? prev.dutySchedules.map((d) =>
-              d.id === swap.dutyId ? { ...d, memberId: swap.targetMemberId } : d
-            )
+            d.id === swap.dutyId ? { ...d, memberId: swap.targetMemberId } : d
+          )
           : prev.dutySchedules
       };
     });
@@ -1161,24 +1161,24 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const existing = prev.mealPlans.find((m) => m.date === date);
       const updatedList = existing
         ? prev.mealPlans.map((m) =>
-            m.date === date
-              ? { ...m, breakfast, lunch, dinner, note, updatedAt: new Date().toISOString() }
-              : m
-          )
+          m.date === date
+            ? { ...m, breakfast, lunch, dinner, note, updatedAt: new Date().toISOString() }
+            : m
+        )
         : [
-            {
-              id: `meal-${date}`,
-              messId: prev.activeMessId,
-              date,
-              breakfast,
-              lunch,
-              dinner,
-              note,
-              createdBy: currentUser.id,
-              updatedAt: new Date().toISOString()
-            },
-            ...prev.mealPlans
-          ];
+          {
+            id: `meal-${date}`,
+            messId: prev.activeMessId,
+            date,
+            breakfast,
+            lunch,
+            dinner,
+            note,
+            createdBy: currentUser.id,
+            updatedAt: new Date().toISOString()
+          },
+          ...prev.mealPlans
+        ];
 
       return {
         ...prev,
@@ -1211,17 +1211,17 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       monthlyAccounts: prev.monthlyAccounts.map((acc) =>
         acc.monthYear === prev.selectedMonth
           ? {
-              ...acc,
-              status: 'CLOSED' as const,
-              closedAt: new Date().toISOString(),
-              closedBy: currentUser.id,
-              totalDeposits: overview.totalDeposits,
-              totalExpenses: overview.totalExpenses,
-              totalReceivables: overview.totalReceivables,
-              totalPayables: overview.totalPayables,
-              closingBalance: overview.cashBalance,
-              notes: notes || acc.notes
-            }
+            ...acc,
+            status: 'CLOSED' as const,
+            closedAt: new Date().toISOString(),
+            closedBy: currentUser.id,
+            totalDeposits: overview.totalDeposits,
+            totalExpenses: overview.totalExpenses,
+            totalReceivables: overview.totalReceivables,
+            totalPayables: overview.totalPayables,
+            closingBalance: overview.cashBalance,
+            notes: notes || acc.notes
+          }
           : acc
       )
     }));
@@ -1346,10 +1346,10 @@ export const MessProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       members: prev.members.map((m) =>
         m.id === memberId
           ? {
-              ...m,
-              status: m.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE',
-              leaveDate: m.status === 'ACTIVE' ? new Date().toISOString().split('T')[0] : undefined
-            }
+            ...m,
+            status: m.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE',
+            leaveDate: m.status === 'ACTIVE' ? new Date().toISOString().split('T')[0] : undefined
+          }
           : m
       )
     }));
